@@ -1,0 +1,97 @@
+package io.niowire.data;
+
+/**
+ * This class represents a packet containing an object. They are used as the
+ * internal communication objects between the various services. They are created
+ * from the raw byte stream coming into the serializer/deserializer.
+ *
+ * @author Trent Houliston
+ */
+public class ObjectPacket implements Comparable<ObjectPacket>
+{
+
+	/**
+	 * The time this packet was created
+	 */
+	private final long timestamp = System.currentTimeMillis();
+	/**
+	 * The ID of the source of this packet (the ID given by NIO connection)
+	 */
+	private final String source;
+	/**
+	 * The data contained in this packet
+	 */
+	private Object data;
+
+	/**
+	 * Construct a new ObjectPacket containing this data from the source (the
+	 * UID of the connection)
+	 *
+	 * @param uid  the unique identifier for the NioConnection which made this
+	 *                object
+	 * @param data the Object which this packet contains
+	 */
+	public ObjectPacket(String uid, Object data)
+	{
+		this.data = data;
+		this.source = uid;
+	}
+
+	/**
+	 * Gets the UID of the NioConnection which created this packet
+	 *
+	 * @return the source of the packet
+	 */
+	public String getSource()
+	{
+		return source;
+	}
+
+	/**
+	 * Gets the data object which is contained in this packet
+	 *
+	 * @return the data object contained in this packet
+	 */
+	public Object getData()
+	{
+		return data;
+	}
+
+	/**
+	 * Sets the data object which is contained in this packet
+	 *
+	 * @param data the data to set
+	 */
+	public void setData(Object data)
+	{
+		this.data = data;
+	}
+
+	/**
+	 * Gets the timestamp that this packet was created
+	 *
+	 * @return the timestamp this packet was created
+	 */
+	public long getTimestamp()
+	{
+		return timestamp;
+	}
+
+	/**
+	 * Compares this packet to another packed based on their timestamps
+	 *
+	 * @param o the other ObjectPacket to compare to
+	 *
+	 * @return a negative integer, zero, or a positive integer as this object is
+	 *            less than, equal to, or greater than the specified object.
+	 *
+	 * @throws NullPointerException if the specified object is null
+	 * @throws ClassCastException   if the specified object's type prevents it
+	 *                                 from being compared to this object.
+	 */
+	@Override
+	public int compareTo(ObjectPacket o)
+	{
+		return Long.compare(this.getTimestamp(), o.getTimestamp());
+	}
+}

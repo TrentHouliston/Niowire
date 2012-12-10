@@ -138,6 +138,36 @@
 		</plugins>
 	</build>
 
+	<!-- Dependencies -->
+	<dependencies>
+		<!-- The Logging framework -->
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>1.0.7</version>
+			<scope>compile</scope>
+			<type>jar</type>
+		</dependency>
+
+		<!-- Gson for parsing Json data -->
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.2.2</version>
+			<scope>compile</scope>
+			<type>jar</type>
+		</dependency>
+
+		<!-- JUnit for unit testing -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.11</version>
+			<scope>test</scope>
+			<type>jar</type>
+		</dependency>
+	</dependencies>
+
 	<properties>
 		<!-- All source files should be UTF-8 -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
