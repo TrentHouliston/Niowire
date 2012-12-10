@@ -5,7 +5,7 @@
 package io.niowire.serversource;
 
 import io.niowire.entities.NioObjectFactory;
-import io.niowire.mangle.NioMangle;
+import io.niowire.inspection.NioInspector;
 import io.niowire.serializer.NioSerializer;
 import io.niowire.service.NioService;
 import java.util.List;
@@ -21,7 +21,7 @@ public class NioServerDefinition
 	private String name;
 	private int port;
 	private NioObjectFactory<NioSerializer> serializerFactory;
-	private NioObjectFactory<NioMangle> mangleFactory;
+	private NioObjectFactory<NioInspector> mangleFactory;
 	private List<NioObjectFactory<NioService>> serviceFactories;
 
 	/**
@@ -91,7 +91,7 @@ public class NioServerDefinition
 	/**
 	 * @return the mangleFactory
 	 */
-	public NioObjectFactory<NioMangle> getMangleFactory()
+	public NioObjectFactory<NioInspector> getMangleFactory()
 	{
 		return mangleFactory;
 	}
@@ -99,7 +99,7 @@ public class NioServerDefinition
 	/**
 	 * @param mangleFactory the mangleFactory to set
 	 */
-	public void setMangleFactory(NioObjectFactory<NioMangle> mangleFactory)
+	public void setMangleFactory(NioObjectFactory<NioInspector> mangleFactory)
 	{
 		this.mangleFactory = mangleFactory;
 	}

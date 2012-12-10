@@ -14,16 +14,15 @@
  * You should have received a copy of the Lesser GNU General Public License
  * along with Niowire. If not, see <http://www.gnu.org/licenses/>.
  */
-package io.niowire.serversource;
+package io.niowire.inspection;
+
+import io.niowire.NiowireException;
 
 /**
  *
  * @author trent
  */
-public enum Event
+public class NioAuthenticationException extends NiowireException
 {
 
-	SERVER_ADD,
-	SERVER_REMOVE,
-	SERVER_UPDATE
 }

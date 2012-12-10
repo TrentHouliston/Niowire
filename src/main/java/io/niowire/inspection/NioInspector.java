@@ -14,16 +14,21 @@
  * You should have received a copy of the Lesser GNU General Public License
  * along with Niowire. If not, see <http://www.gnu.org/licenses/>.
  */
-package io.niowire.serversource;
+package io.niowire.inspection;
+
+import io.niowire.data.ObjectPacket;
+import io.niowire.service.NioService;
 
 /**
  *
  * @author trent
  */
-public enum Event
+public interface NioInspector extends NioService
 {
 
-	SERVER_ADD,
-	SERVER_REMOVE,
-	SERVER_UPDATE
+	public String getUid();
+
+	public ObjectPacket mangle(ObjectPacket line) throws NioAuthenticationException;
+
+	public boolean timeout();
 }

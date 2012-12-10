@@ -1,6 +1,29 @@
+/**
+ * This file is part of Niowire.
+ *
+ * Niowire is free software: you can redistribute it and/or modify it under the
+ * terms of the Lesser GNU General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ *
+ * Niowire is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the Lesser GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the Lesser GNU General Public License
+ * along with Niowire. If not, see <http://www.gnu.org/licenses/>.
+ */
 package io.niowire.server;
 
+import io.niowire.data.ObjectPacket;
+import io.niowire.entities.NioEntityCreationException;
+import io.niowire.entities.NioObjectFactory;
+import io.niowire.inspection.NioAuthenticationException;
+import io.niowire.inspection.NioInspector;
+import io.niowire.serializer.NioSerializer;
 import io.niowire.serversource.NioServerDefinition;
+import io.niowire.service.NioService;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -9,13 +32,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.TreeSet;
-import io.niowire.data.ObjectPacket;
-import io.niowire.entities.NioEntityCreationException;
-import io.niowire.entities.NioObjectFactory;
-import io.niowire.mangle.NioMangle;
-import io.niowire.serializer.NioSerializer;
-import io.niowire.service.NioAuthenticationException;
-import io.niowire.service.NioService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +55,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	 * servers) it can be used for modification of packets, filtering of
 	 * packets, or authentication of packets
 	 */
-	private NioMangle mangle;
+	private NioInspector mangle;
 	//The services that this connection sends to
 	private List<NioService> services;
 	//If this connection is open
