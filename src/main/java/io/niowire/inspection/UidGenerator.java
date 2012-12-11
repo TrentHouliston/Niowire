@@ -79,7 +79,7 @@ public class UidGenerator
 		str.append(String.format("%04x", port));
 
 		//Return the value
-		return str.toString();
+		return str.toString().toUpperCase();
 	}
 
 	/**
