@@ -67,6 +67,9 @@ public class LineSerializer extends DelimitedSerializer
 		//Decode the string
 		String str = DECODER.decode(blob).toString();
 
+		//Remove any carriage returns
+		str = str.replaceAll("\r", "");
+
 		//Deserialize this
 		Object data = deserializeString(str);
 
