@@ -20,13 +20,27 @@ import java.io.IOException;
 import java.util.Map;
 import io.niowire.entities.NioObject;
 import io.niowire.entities.NioObjectFactory;
+import io.niowire.server.NioSocketServer;
 
 /**
+ * This interface defines a server source. A server source will monitor a list
+ * of server defintions and return any changes to this list. It will
+ * add/remove/update any server within its scope and the {@link NioSocketServer}
+ * will use these changes to maintain it's state.
  *
- * @author trent
+ * @author Trent Houliston
  */
 public interface NioServerSource extends NioObject
 {
 
+	/**
+	 * Gets a map of server definition objects and the changes which have been
+	 * made to them.
+	 *
+	 * @return a map of ServerDefinitions and changes that have happened to them
+	 *
+	 * @throws IOException if there is an IOException from the source of these
+	 *                        servers
+	 */
 	public Map<NioServerDefinition, Event> getChanges() throws IOException;
 }

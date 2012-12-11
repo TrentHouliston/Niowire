@@ -16,23 +16,25 @@
  */
 package io.niowire.service;
 
-import io.niowire.data.ObjectPacket;
+import io.niowire.data.NioPacket;
 import io.niowire.entities.NioObject;
-import io.niowire.server.NioConnection;
-import java.util.List;
+import io.niowire.server.NioContextUser;
 
 /**
+ * The NioService interface defines objects which are to be used as services.
+ * These services receive the final data packets from the server. They can then
+ * process them as they choose and if they need to write back to the client.
+ * They can use context.write() to send the data back.
  *
- * @author trent
+ * @author Trent Houliston
  */
-public interface NioService extends NioObject
+public interface NioService extends NioObject, NioContextUser
 {
 
-	public void setContext(NioConnection.Context context);
-
-	public boolean hasOutput();
-
-	public List<ObjectPacket> recieve();
-
-	public void send(ObjectPacket line);
+	/**
+	 * Sends a packet of data to this service for it to process.
+	 *
+	 * @param packet
+	 */
+	public void send(NioPacket packet);
 }

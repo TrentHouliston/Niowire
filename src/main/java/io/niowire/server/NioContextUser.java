@@ -19,11 +19,18 @@ package io.niowire.server;
 import io.niowire.server.NioConnection.Context;
 
 /**
+ * This interface is used when an object uses a NioConnection context object.
  *
- * @author trent
+ * @author Trent Houliston
  */
 public interface NioContextUser
 {
 
+	/**
+	 * Sets the context object for the NioConnection that is managing this
+	 * object.
+	 *
+	 * @param context the context to be set
+	 */
 	public void setContext(Context context);
 }

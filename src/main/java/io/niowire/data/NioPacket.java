@@ -23,7 +23,7 @@ package io.niowire.data;
  *
  * @author Trent Houliston
  */
-public class ObjectPacket implements Comparable<ObjectPacket>
+public class NioPacket implements Comparable<NioPacket>
 {
 
 	/**
@@ -40,14 +40,14 @@ public class ObjectPacket implements Comparable<ObjectPacket>
 	private Object data;
 
 	/**
-	 * Construct a new ObjectPacket containing this data from the source (the
+	 * Construct a new NioPacket containing this data from the source (the
 	 * UID of the connection)
 	 *
 	 * @param uid  the unique identifier for the NioConnection which made this
 	 *                object
 	 * @param data the Object which this packet contains
 	 */
-	public ObjectPacket(String uid, Object data)
+	public NioPacket(String uid, Object data)
 	{
 		this.data = data;
 		this.source = uid;
@@ -96,7 +96,7 @@ public class ObjectPacket implements Comparable<ObjectPacket>
 	/**
 	 * Compares this packet to another packed based on their timestamps
 	 *
-	 * @param o the other ObjectPacket to compare to
+	 * @param o the other NioPacket to compare to
 	 *
 	 * @return a negative integer, zero, or a positive integer as this object is
 	 *            less than, equal to, or greater than the specified object.
@@ -106,7 +106,7 @@ public class ObjectPacket implements Comparable<ObjectPacket>
 	 *                                 from being compared to this object.
 	 */
 	@Override
-	public int compareTo(ObjectPacket o)
+	public int compareTo(NioPacket o)
 	{
 		return Long.compare(this.getTimestamp(), o.getTimestamp());
 	}

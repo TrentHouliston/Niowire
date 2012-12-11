@@ -19,10 +19,52 @@ package io.niowire.inspection;
 import io.niowire.NiowireException;
 
 /**
+ * This exception is thrown when a packet fails authenticating. When this is
+ * thrown then the connection to the client will be closed and the NioConnection
+ * object and all services will be shut down.
  *
- * @author trent
+ * @author Trent Houliston
  */
 public class NioAuthenticationException extends NiowireException
 {
 
+	/**
+	 * Default constructor, has no message or cause.
+	 */
+	public NioAuthenticationException()
+	{
+		super();
+	}
+
+	/**
+	 * Construct a new NioAuthenticationException with the passed message
+	 *
+	 * @param message the message to attach to this exception
+	 */
+	public NioAuthenticationException(String message)
+	{
+		super(message);
+	}
+
+	/**
+	 * Construct a new NioAuthenticationException with a message and a cause.
+	 *
+	 * @param message the message to attach to this exception
+	 * @param cause   the cause of this exception
+	 */
+	public NioAuthenticationException(String message, Throwable cause)
+	{
+		super(message, cause);
+	}
+
+	/**
+	 * Constructs a new NioAuthenticationException with a cause
+	 *
+	 * @param cause the cause of this exception
+	 */
+	public NioAuthenticationException(Throwable cause)
+	{
+		super(cause);
+	}
 }
+

@@ -20,9 +20,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
-import io.niowire.data.ObjectPacket;
+import io.niowire.data.NioPacket;
 import io.niowire.server.NioConnection;
 import io.niowire.server.NioConnection.Context;
+import java.nio.channels.ClosedChannelException;
+import java.util.Queue;
 
 /**
  * This class is the most basic serializer. It scans the input stream for a
@@ -48,24 +50,28 @@ public abstract class DelimitedSerializer implements NioSerializer
 	 */
 	private static final ByteBuffer tb = ByteBuffer.allocateDirect(32768);
 	//This buffer is allocated as needed if there is any leftover data (split packets)
-	private ByteBuffer residualRecieve = null;
-	private ByteBuffer residualSend = null;
+	private ByteBuffer residual = null;
 	private boolean open = true;
 	protected Context context;
+	private Queue<ByteBuffer> sendQueue = new LinkedList<ByteBuffer>();
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<ObjectPacket> deserialize(ByteBuffer buffer) throws IOException
+	public List<NioPacket> deserialize(ByteBuffer buffer) throws IOException
 	{
-		//TODO throw a closed exception
+		//Check if the channel is closed
+		if (!open)
+		{
+			throw new ClosedChannelException();
+		}
 
 		//Our start point is initially 0
 		int startPoint = 0;
 
 		//Create a new list to hold the packets we find
-		LinkedList<ObjectPacket> packets = new LinkedList<ObjectPacket>();
+		LinkedList<NioPacket> packets = new LinkedList<NioPacket>();
 
 		//The delimiter is removed from the stream and used to break up packets
 		byte[] delimiter = getDelimiter();
@@ -77,12 +83,12 @@ public abstract class DelimitedSerializer implements NioSerializer
 		tb.clear();
 
 		//If we have residual from the last run then add it to the transient buffer
-		if (residualSend != null && residualSend.hasRemaining())
+		if (residual != null && residual.hasRemaining())
 		{
 			//Our start point is initially
-			startPoint = residualSend.remaining();
-			tb.put(residualSend);
-			residualSend.clear();
+			startPoint = residual.remaining();
+			tb.put(residual);
+			residual.clear();
 		}
 
 		//Add our data into the buffer as well and get it ready for reading
@@ -145,16 +151,21 @@ public abstract class DelimitedSerializer implements NioSerializer
 			int requiredSize = tb.remaining();
 
 			//If we don't have enough
-			if (residualSend == null || residualSend.capacity() < requiredSize)
+			if (residual == null || residual.capacity() < requiredSize)
 			{
 				//Get enough to hold it
-				residualSend = ByteBuffer.allocate(requiredSize);
+				residual = ByteBuffer.allocate(requiredSize);
 			}
 
 			//Store it for next time
-			residualSend.clear();
-			residualSend.put(tb);
-			residualSend.flip();
+			residual.clear();
+			residual.put(tb);
+			residual.flip();
+		}
+		//If we didn't have any data left over, get rid of our residual buffer
+		else
+		{
+			residual = null;
 		}
 
 		//Return the packets that we got from this
@@ -165,13 +176,19 @@ public abstract class DelimitedSerializer implements NioSerializer
 	 * {@inheritDoc}
 	 */
 	@Override
-	public ByteBuffer serialize(List<ObjectPacket> packets) throws IOException
+	public void serialize(List<NioPacket> packets) throws IOException
 	{
+		//Check if the channel is closed
+		if (!open)
+		{
+			throw new ClosedChannelException();
+		}
+
+		//Serialize our packets into byte buffers
 		ByteBuffer buff = serializeBlob(packets);
 
-		//TODO buffer this buffer so that we only have to send the data that we can, and buffer the rest for next time
-
-		return buff;
+		//Add these buffers to the queue
+		sendQueue.add(buff);
 	}
 
 	/**
@@ -180,35 +197,81 @@ public abstract class DelimitedSerializer implements NioSerializer
 	@Override
 	public void close() throws IOException
 	{
-		residualSend = null;
-		residualRecieve = null;
+		//Clear our variables
+		sendQueue = null;
+		residual = null;
 		open = false;
 	}
 
-
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public int read(ByteBuffer buffer)
 	{
-		//TODO read our to send data into this buffer
-		return 0;
+		int read = 0;
+
+		//Read as many of our buffers into the passed buffer as we can
+		while (!sendQueue.isEmpty() &&
+			   buffer.remaining() > sendQueue.peek().remaining())
+		{
+			ByteBuffer bb = sendQueue.poll();
+			read += bb.remaining();
+			buffer.put(bb);
+		}
+
+		//Read as much of our remaining buffer as we can
+		if(!sendQueue.isEmpty())
+		{
+			//Get our next buffer in the queue
+			ByteBuffer peek = sendQueue.peek();
+
+			//Create a view of our buffer
+			ByteBuffer view = peek.duplicate();
+
+			//Set it's limit to how much free space we have in the buffer
+			view.limit(peek.position() + buffer.remaining());
+
+			//Move the position of our byte buffer so that we skip over the bytes we are writing
+			peek.position(peek.position() + buffer.remaining());
+
+			//Put as much as we can into the buffer
+			buffer.put(view);
+		}
+
+		return read;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean isOpen()
 	{
-		//Todo implement a closing things
-		return true;
+		return open;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void setContext(Context context)
 	{
 		this.context = context;
 	}
 
-	protected abstract List<ObjectPacket> deserializeBlob(ByteBuffer blob) throws IOException;
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean hasData()
+	{
+		return !sendQueue.isEmpty();
+	}
 
-	protected abstract ByteBuffer serializeBlob(List<ObjectPacket> objects) throws IOException;
+	protected abstract List<NioPacket> deserializeBlob(ByteBuffer blob) throws IOException;
+
+	protected abstract ByteBuffer serializeBlob(List<NioPacket> objects) throws IOException;
 
 	protected abstract byte[] getDelimiter();
 }

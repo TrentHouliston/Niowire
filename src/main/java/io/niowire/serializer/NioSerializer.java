@@ -16,7 +16,7 @@
  */
 package io.niowire.serializer;
 
-import io.niowire.data.ObjectPacket;
+import io.niowire.data.NioPacket;
 import io.niowire.entities.NioObject;
 import io.niowire.server.NioContextUser;
 import java.io.IOException;
@@ -52,7 +52,7 @@ public interface NioSerializer extends NioObject, NioContextUser, ReadableByteCh
 	 *
 	 * @throws IOException if there was an IOException while deserializing
 	 */
-	public List<ObjectPacket> deserialize(ByteBuffer buffer) throws IOException;
+	public List<NioPacket> deserialize(ByteBuffer buffer) throws IOException;
 
 	/**
 	 * This method is responsible for converting object packets into their byte
@@ -62,11 +62,9 @@ public interface NioSerializer extends NioObject, NioContextUser, ReadableByteCh
 	 *
 	 * @param packets the packets to be serialized
 	 *
-	 * @return a ByteBuffer containing the binary representation of the packets
-	 *
 	 * @throws IOException if there was an IOException while serializing
 	 */
-	public ByteBuffer serialize(List<ObjectPacket> packets) throws IOException;
+	public void serialize(List<NioPacket> packets) throws IOException;
 
 	/**
 	 * Reading from this Serializer means to read out from the bytes which are
@@ -79,4 +77,12 @@ public interface NioSerializer extends NioObject, NioContextUser, ReadableByteCh
 	 */
 	@Override
 	public int read(ByteBuffer buffer);
+
+	/**
+	 * This method returns true when this serializer has data which has been
+	 * buffered into it to be written to the client.
+	 *
+	 * @return true if there is data to be written, false otherwise
+	 */
+	public boolean hasData();
 }

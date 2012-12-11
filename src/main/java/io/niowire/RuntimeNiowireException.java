@@ -17,28 +17,51 @@
 package io.niowire;
 
 /**
+ * This exception is the common super class for all of the Runtime exceptions
+ * thrown by Niowire. These kind of exceptions are to be thought of as
+ * exceptions that you cannot reasonably be expected to correct, or recover
+ * from.
  *
- * @author trent
+ * @author Trent Houliston
  */
 public class RuntimeNiowireException extends RuntimeException
 {
 
+	/**
+	 * Default constructor, has no message or cause.
+	 */
 	public RuntimeNiowireException()
 	{
 		super();
 	}
 
+	/**
+	 * Construct a new RuntimeNiowireException with the passed message
+	 *
+	 * @param message the message to attach to this exception
+	 */
 	public RuntimeNiowireException(String message)
 	{
 		super(message);
 	}
 
-	public RuntimeNiowireException(String message, Exception cause)
+	/**
+	 * Construct a new RuntimeNiowireException with a message and a cause.
+	 *
+	 * @param message the message to attach to this exception
+	 * @param cause   the cause to attach to this exception
+	 */
+	public RuntimeNiowireException(String message, Throwable cause)
 	{
 		super(message, cause);
 	}
 
-	public RuntimeNiowireException(Exception cause)
+	/**
+	 * Constructs a new RuntimeNiowireException with a cause
+	 *
+	 * @param cause the cause to attach to this exception
+	 */
+	public RuntimeNiowireException(Throwable cause)
 	{
 		super(cause);
 	}

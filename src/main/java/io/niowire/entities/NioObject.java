@@ -18,14 +18,26 @@ package io.niowire.entities;
 
 import java.io.Closeable;
 import java.util.Map;
-import io.niowire.server.NioConnection.Context;
 
 /**
+ * This interface specifies the minimum requirements to be used as an NioObject
+ * (and also be created using reflection by the {@link NioObjectFactory}. To do
+ * this it needs to be closeable, and also to accept a configuration.
  *
- * @author trent
+ * @author Trent Houliston
  */
 public interface NioObject extends Closeable
 {
 
+	/**
+	 * Configure the NioObject with the passed Map, it should use this map to
+	 * set itself up. The configuration object should hold information which is
+	 * required to do this such as (for example) a character set.
+	 *
+	 * @param configuration the configuration object which will be used to
+	 *                         configure this object once it is constructed
+	 *
+	 * @throws Exception if there was an exception while configuring
+	 */
 	public void configure(Map<String, Object> configuration) throws Exception;
 }

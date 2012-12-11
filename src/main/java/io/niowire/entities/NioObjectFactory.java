@@ -16,36 +16,82 @@
  */
 package io.niowire.entities;
 
+import io.niowire.NiowireException;
+import java.util.Collections;
 import java.util.Map;
 
 /**
+ * This class is used to create NioObjects using reflection from a Class Name
+ * and a configuration. It will use these to construct and configure the class
+ * before returning it.
  *
- * @author trent
+ * @author Trent Houliston
  */
 public class NioObjectFactory<T extends NioObject>
 {
 
 	private final String className;
 	private final Map<String, Object> configuration;
+	private final Class<T> clazz;
 
-	public NioObjectFactory(String className, Map<String, Object> configuration)
-	{
-		this.className = className;
-		this.configuration = configuration;
-	}
-
-	public T create() throws NioEntityCreationException
+	/**
+	 * This constructs a new Object factory using the passed class name and the
+	 * configuration object.
+	 *
+	 * @param className     the class name of the object
+	 * @param configuration the configuration map to be used when creating the
+	 *                         object
+	 *
+	 * @throws NiowireException if the class was not found
+	 */
+	public NioObjectFactory(String className, Map<String, Object> configuration) throws NioObjectCreationException
 	{
 		try
 		{
-			Class<T> clazz = (Class<T>) Class.forName(className);
+			//Store our class name
+			this.className = className;
+
+			//Create a class object from our class name
+			this.clazz = (Class<T>) Class.forName(className);
+
+			//Check the class we just found is actually a NioObject
+			if(!NioObject.class.isAssignableFrom(clazz))
+			{
+				throw new NioObjectCreationException(className + " is does not implement NioObject");
+			}
+
+			//Store our configuration in an unmodifyable way
+			this.configuration = Collections.unmodifiableMap(configuration);
+		}
+		catch (Exception ex)
+		{
+			throw new NioObjectCreationException(ex);
+		}
+	}
+
+	/**
+	 * This method creates a new NioObject from the class name and configuration
+	 * which were passed to this object.
+	 *
+	 * @return the newly created and configured NioObject
+	 *
+	 * @throws NioObjectCreationException if there was an exception while trying
+	 *                                       to create this object.
+	 */
+	public T create() throws NioObjectCreationException
+	{
+		try
+		{
+			//Create a new instance
 			T obj = clazz.newInstance();
+
+			//Configure this instance
 			obj.configure(configuration);
 			return obj;
 		}
 		catch (Exception ex)
 		{
-			throw new NioEntityCreationException(ex);
+			throw new NioObjectCreationException(ex);
 		}
 	}
 }

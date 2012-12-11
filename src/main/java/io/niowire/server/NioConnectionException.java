@@ -19,23 +19,49 @@ package io.niowire.server;
 import io.niowire.NiowireException;
 
 /**
+ * This exception is thrown when an exception occurs during the operations of a
+ * NioConnection.
  *
- * @author trent
+ * @author Trent Houliston
  */
 public class NioConnectionException extends NiowireException
 {
 
+	/**
+	 * Default constructor, has no message or cause.
+	 */
 	public NioConnectionException()
 	{
 		super();
 	}
 
-	public NioConnectionException(String message, Exception cause)
+	/**
+	 * Construct a new NioConnectionException with the passed message
+	 *
+	 * @param message the message to attach to this exception
+	 */
+	public NioConnectionException(String message)
+	{
+		super(message);
+	}
+
+	/**
+	 * Construct a new NioConnectionException with a message and a cause.
+	 *
+	 * @param message the message to attach to this exception
+	 * @param cause   the cause to attach to this exception
+	 */
+	public NioConnectionException(String message, Throwable cause)
 	{
 		super(message, cause);
 	}
 
-	public NioConnectionException(Exception cause)
+	/**
+	 * Constructs a new NioConnectionException with a cause
+	 *
+	 * @param cause the cause to attach to this exception
+	 */
+	public NioConnectionException(Throwable cause)
 	{
 		super(cause);
 	}

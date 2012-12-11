@@ -16,7 +16,7 @@
  */
 package io.niowire.inspection;
 
-import io.niowire.data.ObjectPacket;
+import io.niowire.data.NioPacket;
 import io.niowire.server.NioConnection.Context;
 import java.io.IOException;
 import java.util.Collections;
@@ -39,7 +39,7 @@ public class NullInspector implements NioInspector
 	}
 
 	@Override
-	public ObjectPacket mangle(ObjectPacket line) throws NioAuthenticationException
+	public NioPacket inspect(NioPacket line) throws NioAuthenticationException
 	{
 		return line;
 	}
@@ -55,26 +55,6 @@ public class NullInspector implements NioInspector
 	public void setContext(Context context)
 	{
 		this.context = context;
-	}
-
-	@Override
-	public boolean hasOutput()
-	{
-		//We do nothing
-		return false;
-	}
-
-	@Override
-	public List<ObjectPacket> recieve()
-	{
-		//Return nothing
-		return Collections.EMPTY_LIST;
-	}
-
-	@Override
-	public void send(ObjectPacket line)
-	{
-		//Do nothing
 	}
 
 	@Override

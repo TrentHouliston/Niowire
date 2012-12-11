@@ -16,8 +16,8 @@
  */
 package io.niowire.server;
 
-import io.niowire.data.ObjectPacket;
-import io.niowire.entities.NioEntityCreationException;
+import io.niowire.data.NioPacket;
+import io.niowire.entities.NioObjectCreationException;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.inspection.NioAuthenticationException;
 import io.niowire.inspection.NioInspector;
@@ -31,13 +31,19 @@ import java.nio.channels.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * This Class is responsible for passing the data from a client between the
+ * various components, and for returning data to the client. It holds an
+ * {@link NioInspector}, {@link NioSerializer} and several {@link NioService}
+ * objects. It will read data in from the client, send it through the parser,
+ * then through the inspector then to each of the services.
  *
- * @author trent
+ * Data on the return trip will also be collected from the serializer.
+ *
+ * @author Trent Houliston
  */
 public class NioConnection implements ReadableByteChannel, WritableByteChannel
 {
@@ -51,24 +57,22 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	//Parses the binary stream into objects
 	private NioSerializer serializer;
 	/**
-	 * The mangler, (packets are run through this first before being sent to
+	 * The inspector, (packets are run through this first before being sent to
 	 * servers) it can be used for modification of packets, filtering of
 	 * packets, or authentication of packets
 	 */
-	private NioInspector mangle;
+	private NioInspector inspect;
 	//The services that this connection sends to
 	private List<NioService> services;
 	//If this connection is open
 	private boolean open = true;
-	//Messages in the queue which are waiting to be sent through the socket connection
-	private TreeSet<ObjectPacket> messages = new TreeSet<ObjectPacket>();
 
 	/**
 	 * This creates a new NioConnection for a particular server. it handles all
 	 * of the data which comes in through a byte buffer. It then uses the
 	 * serializer to convert this byte stream into an object stream. This object
-	 * stream is then sent through the mangler (for filtering, modification and
-	 * authentication of packets) and is then sent through to all of the
+	 * stream is then sent through the inspector (for filtering, modification
+	 * and authentication of packets) and is then sent through to all of the
 	 * services.
 	 *
 	 * @param key          the selection key that is being used by the Selector
@@ -93,9 +97,9 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 			//Create our serializer from the definition and pass in our context
 			serializer = SERVER_CONFIG.getSerializerFactory().create();
 			serializer.setContext(context);
-			//Create our mangler from the definition and pass in our context
-			mangle = SERVER_CONFIG.getMangleFactory().create();
-			mangle.setContext(context);
+			//Create our inspector from the definition and pass in our context
+			inspect = SERVER_CONFIG.getInspectorFactory().create();
+			inspect.setContext(context);
 
 			//Create all our services
 			for (NioObjectFactory<NioService> factory : SERVER_CONFIG.getServiceFactories())
@@ -108,10 +112,9 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 					service.setContext(context);
 					services.add(service);
 				}
-				catch (NioEntityCreationException ex)
+				catch (NioObjectCreationException ex)
 				{
 					LOG.warn("A service threw an error while attempting to create it", ex);
-					//TODO log the error here
 				}
 			}
 		}
@@ -130,24 +133,8 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 			throw new ClosedChannelException();
 		}
 
-		//Start with the Read operation
-		int ops = SelectionKey.OP_READ;
-
-		//Put in the write operation if we have some data left over in our buffer
-		ops |= messages.isEmpty() ? 0 : SelectionKey.OP_WRITE;
-
-		//Loop through all our services
-		for (NioService s : services)
-		{
-			//Get if they want to write data
-			ops |= s.hasOutput() ? 0 : SelectionKey.OP_WRITE;
-		}
-
-		//Check our mangle
-		ops |= mangle.hasOutput() ? 0 : SelectionKey.OP_WRITE;
-
-		//Update our interest operations
-		SELECTION_KEY.interestOps(ops);
+		//Start with the Read operation and add in the write operation if we need to
+		SELECTION_KEY.interestOps(SelectionKey.OP_READ | (serializer.hasData() ? SelectionKey.OP_WRITE : 0));
 	}
 
 	/**
@@ -176,20 +163,20 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 		int bytes = src.remaining();
 
 		//Deserialize the data
-		List<ObjectPacket> packets = serializer.deserialize(src);
+		List<NioPacket> packets = serializer.deserialize(src);
 
-		for (ObjectPacket packet : packets)
+		for (NioPacket packet : packets)
 		{
 			System.out.println(packet.getData().toString());
 			System.out.println(packet.getData().getClass().getName());
 		}
 
 		//Loop through all the packets
-		for (ObjectPacket packet : packets)
+		for (NioPacket packet : packets)
 		{
 			try
 			{
-				ObjectPacket p = mangle.mangle(packet);
+				NioPacket p = inspect.inspect(packet);
 
 				//Loop through all the services sending the mangled packet
 				for (NioService service : services)
@@ -231,13 +218,19 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	@Override
 	public int read(ByteBuffer dst) throws ClosedChannelException
 	{
+		//Check that we are open
 		if (!open)
 		{
 			throw new ClosedChannelException();
 		}
 
 		//Read from the serializer into the destination buffer
-		return serializer.read(dst);
+		int read = serializer.read(dst);
+
+		//Update our interest ops (we might no longer need to write)
+		updateInterestOps();
+
+		return read;
 	}
 
 	/**
@@ -254,7 +247,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 
 	/**
 	 * Close this NioConnection, release all the resources associated with this
-	 * connection and tell all the services, serializer and mangler to also
+	 * connection and tell all the services, serializer and inspector to also
 	 * close (release resources)
 	 *
 	 * @throws IOException
@@ -267,7 +260,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 
 		//Tell all our objects that we are using that they should close (clean up)
 		serializer.close();
-		mangle.close();
+		inspect.close();
 		for (NioService service : services)
 		{
 			service.close();
@@ -275,9 +268,8 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 
 		//Wipe out variables so they can be garbage collected
 		serializer = null;
-		mangle = null;
+		inspect = null;
 		services = null;
-		messages = null;
 		context = null;
 
 		//We are closed
@@ -286,16 +278,16 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 
 	/**
 	 * This method is called periodically as a way to ask the NioConnection to
-	 * check if it should time out. This feature is handled by the mangle object
-	 * as it receives every packet which goes through and can make a decision
-	 * based on them.
+	 * check if it should time out. This feature is handled by the inspect
+	 * object as it receives every packet which goes through and can make a
+	 * decision based on them.
 	 *
 	 * @throws IOException
 	 */
 	public void timeout() throws IOException
 	{
-		//Check the mangle for a timeout
-		if (mangle.timeout())
+		//Check the inspect for a timeout
+		if (inspect.timeout())
 		{
 			//Close this connection
 			this.close();
@@ -303,7 +295,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	}
 
 	/**
-	 * The toString method gets the UID from the mangle object as the toString
+	 * The toString method gets the UID from the inspect object as the toString
 	 * of this object.
 	 *
 	 * @return the String representation of this object (it's UID)
@@ -311,7 +303,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	@Override
 	public String toString()
 	{
-		return mangle.getUid();
+		return inspect.getUid();
 	}
 
 	/**
@@ -339,6 +331,16 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 		}
 
 		/**
+		 * Writes a packet back to the client
+		 *
+		 * @param packet the packet to be written
+		 */
+		public void write(List<NioPacket> packets) throws IOException
+		{
+			serializer.serialize(packets);
+		}
+
+		/**
 		 * Gets the InetSocketAddress of the other end of the connection. This
 		 * is the IP/Port of the socket which we are connected to.
 		 *
@@ -360,14 +362,14 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 
 		/**
 		 * Get the UID of this connection (be aware that this can change during
-		 * execution based on the mangle object)
+		 * execution based on the inspect object)
 		 *
 		 * @return the Unique identifier for this connection, used to identify
 		 *               packets from it in services.
 		 */
 		public String getUid()
 		{
-			return mangle.getUid();
+			return inspect.getUid();
 		}
 
 		/**

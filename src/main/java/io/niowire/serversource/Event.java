@@ -16,14 +16,28 @@
  */
 package io.niowire.serversource;
 
+import io.niowire.server.NioSocketServer;
+
 /**
+ * This enum is used to describe the state of changes which occur in a server
+ * source. It is used to tell the {@link NioSocketServer} if it should be
+ * adding/removing or updating the server.
  *
- * @author trent
+ * @author Trent Houliston
  */
 public enum Event
 {
 
+	/**
+	 * Add a new server to the {@link NioSocketServer}
+	 */
 	SERVER_ADD,
+	/**
+	 * Removes a server from the {@link NioSocketServer}
+	 */
 	SERVER_REMOVE,
+	/**
+	 * Updates a server in the {@link NioSocketServer}
+	 */
 	SERVER_UPDATE
 }
