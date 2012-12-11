@@ -22,6 +22,7 @@ import io.niowire.serversource.NioServerDefinition;
 import io.niowire.serversource.NioServerSource;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.HashMap;
@@ -171,8 +172,15 @@ public class NioSocketServer implements Runnable
 							//Get the buffer ready for writing
 							buffer.flip();
 
-							//Write it to our connection
-							connection.write(buffer);
+							try
+							{
+								//Write it to our connection
+								connection.write(buffer);
+							}
+							catch (BufferOverflowException ex)
+							{
+								//TODO handle this case
+							}
 						}
 					}
 					//If the channel is writeable (we have data to send to the client)
@@ -191,6 +199,9 @@ public class NioSocketServer implements Runnable
 
 						//Write as much data as we can to the client
 						chan.write(buffer);
+
+						//If we have data left over then send it back to be rebuffered
+						connection.rebuffer(buffer);
 					}
 
 					//We are done with this key

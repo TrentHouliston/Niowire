@@ -14,43 +14,32 @@ import static org.junit.Assert.*;
 public class UidGeneratorTest
 {
 
-	public UidGeneratorTest()
-	{
-	}
-
 	/**
 	 * Test the method which accepts a socket address
 	 */
 	@Test
-	public void testAddressToUid()
+	public void testAddressToUid() throws Exception
 	{
-		try
-		{
-			InetAddress inet;
-			InetSocketAddress sAddr;
-			String uid;
+		InetAddress inet;
+		InetSocketAddress sAddr;
+		String uid;
 
-			//Test UIDS with long components (2 hex characters)
-			inet = InetAddress.getByName("171.205.239.171");
-			sAddr = new InetSocketAddress(inet, 52719);
-			uid = UidGenerator.addressToUid(sAddr);
-			assertEquals("ABCDEFABCDEF", uid);
+		//Test UIDS with long components (2 hex characters)
+		inet = InetAddress.getByName("171.205.239.171");
+		sAddr = new InetSocketAddress(inet, 52719);
+		uid = UidGenerator.addressToUid(sAddr);
+		assertEquals("ABCDEFABCDEF", uid);
 
-			//Test Uids with short components (1 hex character)
-			inet = InetAddress.getByName("10.0.0.1");
-			sAddr = new InetSocketAddress(inet, 80);
-			uid = UidGenerator.addressToUid(sAddr);
-			assertEquals("0A0000010050", uid);
+		//Test Uids with short components (1 hex character)
+		inet = InetAddress.getByName("10.0.0.1");
+		sAddr = new InetSocketAddress(inet, 80);
+		uid = UidGenerator.addressToUid(sAddr);
+		assertEquals("0A0000010050", uid);
 
-			//Test IPv6 addresses
-			inet = InetAddress.getByName("dead:beef:cafe:dead:beef:cafe:dead:beef");
-			sAddr = new InetSocketAddress(inet, 51966);
-			uid = UidGenerator.addressToUid(sAddr);
-			assertEquals("DEADBEEFCAFEDEADBEEFCAFEDEADBEEFCAFE", uid);
-		}
-		catch (Exception ex)
-		{
-			fail("An exception was thrown");
-		}
+		//Test IPv6 addresses
+		inet = InetAddress.getByName("dead:beef:cafe:dead:beef:cafe:dead:beef");
+		sAddr = new InetSocketAddress(inet, 51966);
+		uid = UidGenerator.addressToUid(sAddr);
+		assertEquals("DEADBEEFCAFEDEADBEEFCAFEDEADBEEFCAFE", uid);
 	}
 }

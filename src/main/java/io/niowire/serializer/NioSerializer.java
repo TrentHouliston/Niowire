@@ -85,4 +85,13 @@ public interface NioSerializer extends NioObject, NioContextUser, ReadableByteCh
 	 * @return true if there is data to be written, false otherwise
 	 */
 	public boolean hasData();
+
+	/**
+	 * This method is used to send data back that could not be dealt with at a
+	 * the socket level to the serializer to be buffered (so all buffering
+	 * happens at the same place)
+	 *
+	 * @param data the {@link ByteBuffer} who's data to store
+	 */
+	public void rebuffer(ByteBuffer data);
 }

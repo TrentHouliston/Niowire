@@ -228,6 +228,18 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	}
 
 	/**
+	 * This method is used to send data which was not yet used by the client
+	 * (too much for the socket) back to the connection to be buffered in the
+	 * serializer.
+	 *
+	 * @param buffer the buffer to be re-buffered
+	 */
+	public void rebuffer(ByteBuffer buffer)
+	{
+		serializer.rebuffer(buffer);
+	}
+
+	/**
 	 * Returns if this NioConnection is open.
 	 *
 	 * @return true if the connection is open, false otherwise

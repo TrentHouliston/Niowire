@@ -53,6 +53,7 @@ public abstract class DelimitedSerializer implements NioSerializer
 	private boolean open = true;
 	protected Context context;
 	private Queue<ByteBuffer> sendQueue = new LinkedList<ByteBuffer>();
+	private ByteBuffer rebuffer = null;
 
 	/**
 	 * {@inheritDoc}
@@ -210,20 +211,33 @@ public abstract class DelimitedSerializer implements NioSerializer
 	{
 		int read = 0;
 
+		//If we have a rebuffer then add it first
+		if (rebuffer != null)
+		{
+			read += rebuffer.remaining();
+			buffer.put(rebuffer);
+			rebuffer = null;
+		}
+
 		//Read as many of our buffers into the passed buffer as we can
-		while (!sendQueue.isEmpty() &&
-			   buffer.remaining() > sendQueue.peek().remaining())
+		while (!sendQueue.isEmpty()
+			   && buffer.remaining() >= sendQueue.peek().remaining() + getDelimiter().length)
 		{
 			ByteBuffer bb = sendQueue.poll();
 			read += bb.remaining();
+			read += getDelimiter().length;
 			buffer.put(bb);
+			buffer.put(getDelimiter());
 		}
 
 		//Read as much of our remaining buffer as we can
-		if(!sendQueue.isEmpty())
+		if (!sendQueue.isEmpty())
 		{
 			//Get our next buffer in the queue
 			ByteBuffer peek = sendQueue.peek();
+
+			//Note that we don't remove the element here, even if it is empty
+			//This is so a delimiter can be added next time (even if there is no data)
 
 			//Create a view of our buffer
 			ByteBuffer view = peek.duplicate();
@@ -268,9 +282,21 @@ public abstract class DelimitedSerializer implements NioSerializer
 		return !sendQueue.isEmpty();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void rebuffer(ByteBuffer in)
+	{
+		//Get the byte buffer
+		rebuffer = ByteBuffer.allocate(in.remaining());
+		rebuffer.put(in);
+		rebuffer.flip();
+	}
+
 	protected abstract List<NioPacket> deserializeBlob(ByteBuffer blob) throws IOException;
 
-	protected abstract ByteBuffer serializeBlob(NioPacket objects) throws IOException;
+	protected abstract ByteBuffer serializeBlob(NioPacket packet) throws IOException;
 
 	protected abstract byte[] getDelimiter();
 }
