@@ -19,7 +19,6 @@ package io.niowire.inspection;
 import io.niowire.data.NioPacket;
 import io.niowire.entities.NioObject;
 import io.niowire.server.NioContextUser;
-import io.niowire.service.NioService;
 
 /**
  * This interface is the NioInspector interface, classes which implement this
@@ -66,7 +65,7 @@ public interface NioInspector extends NioObject, NioContextUser
 	 * UID before information about the connection is known, and again when
 	 * enough packets have been collected to give it a final UID.
 	 *
-	 * As a starting point, a generator is provided in the {@link NullInspector}
+	 * As a starting point, a generator is provided in the {@link UidGenerator}
 	 * which uses the IP and Port of the connection to generate a hexadecimal
 	 * representation of the combination of the two remote (which should always
 	 * be unique).

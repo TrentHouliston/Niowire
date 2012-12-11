@@ -19,23 +19,29 @@ package io.niowire.inspection;
 import io.niowire.data.NioPacket;
 import io.niowire.server.NioConnection.Context;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 /**
+ * This class is an inspector which does not do anything with the incoming data
+ * and never times out. It uses the IP/Port of the remote socket to build its
+ * UID.
  *
- * @author trent
+ * @author Trent Houliston
  */
 public class NullInspector implements NioInspector
 {
+//Our context
 
 	private Context context;
 
 	@Override
 	public String getUid()
 	{
-		return context.getRemoteAddress().toString();
+		return UidGenerator.addressToUid(context.getRemoteAddress());
 	}
 
 	@Override

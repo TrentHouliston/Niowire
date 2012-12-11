@@ -9,12 +9,12 @@
 		}
 	},
 
-	"mangleFactory" : {
-		"className" : "io.niowire.mangle.NullMangler",
+	"inspectorFactory" : {
+		"className" : "io.niowire.inspection.NullInspector",
 		"configuration" : {}
 	},
 
 	"serviceFactories" : [
-		
+
 	]
 }
