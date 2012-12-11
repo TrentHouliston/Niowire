@@ -18,17 +18,16 @@ package io.niowire.serversource;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import java.io.BufferedReader;
+import com.google.gson.JsonSyntaxException;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.*;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.file.StandardWatchEventKinds.*;
 
 /**
  * This class acts as a server source by watching the configured directory and
@@ -46,21 +45,17 @@ public class DirectoryServerSource implements NioServerSource
 
 	private static final Logger LOG = LoggerFactory.getLogger(DirectoryServerSource.class);
 	/**
-	 * Our watcher for watching the directory
+	 * Our Directory
 	 */
-	private WatchService watcher;
-	/**
-	 * The path of our directory
-	 */
-	private Path path;
+	private File dir;
 	/**
 	 * A GSON instance to parse the json files
 	 */
 	private static Gson gson = new GsonBuilder().serializeNulls().create();
 	/**
-	 * First run so that it will return the files as being added
+	 * Our current state
 	 */
-	private boolean firstRun = true;
+	private HashMap<File, Long> servers = new HashMap<File, Long>();
 
 	/**
 	 * {@inheritDoc}
@@ -68,19 +63,11 @@ public class DirectoryServerSource implements NioServerSource
 	@Override
 	public void configure(Map<String, Object> configuration) throws IOException
 	{
-		LOG.info("Starting up directory watching server source");
-		//Open the watcher to catch the events
-		watcher = FileSystems.getDefault().newWatchService();
-
 		//Get our directory from the configuration
 		String directory = (String) configuration.get("directory");
 
 		//Get the path
-		path = Paths.get(directory);
-
-		//Register it with the watcher (note that this will throw an exception
-		//if the directory does not exist)
-		path.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
+		dir = new File(directory);
 	}
 
 	/**
@@ -89,9 +76,7 @@ public class DirectoryServerSource implements NioServerSource
 	@Override
 	public void close() throws IOException
 	{
-		watcher.close();
-		watcher = null;
-		LOG.info("Directory watching service closed");
+		servers = null;
 	}
 
 	/**
@@ -108,103 +93,73 @@ public class DirectoryServerSource implements NioServerSource
 	@Override
 	public Map<NioServerDefinition, Event> getChanges() throws IOException
 	{
-		//If this is our first run
-		if (firstRun)
+		//Where we put the changes
+		HashMap<NioServerDefinition, Event> changes = new HashMap<NioServerDefinition, Event>();
+
+		//Get our files
+		for (File file : dir.listFiles())
 		{
-			//Not anymore
-			firstRun = false;
-
-			//Make a hashmap to store the results
-			HashMap<NioServerDefinition, Event> map = new HashMap<NioServerDefinition, Event>();
-
-			//Loop through all the files in our path
-			for (Path file : Files.newDirectoryStream(path))
+			if (!servers.containsKey(file))
 			{
 				try
 				{
-					//Read the files and parse them form json
-					BufferedReader reader = Files.newBufferedReader(file, Charset.defaultCharset());
-					NioServerDefinition config = gson.fromJson(reader, NioServerDefinition.class);
+					FileReader fr = new FileReader(file);
+					NioServerDefinition srv = gson.fromJson(fr, NioServerDefinition.class);
+					srv.setId(file.getName());
+					fr.close();
 
-					//Put them in the map with the state of add
-					LOG.info("Server definition {} was added", file.getFileName());
-					map.put(config, Event.SERVER_ADD);
+					changes.put(srv, Event.SERVER_ADD);
+
+					servers.put(file, file.lastModified());
+
+					LOG.info("Server definition {} was added", file.getName());
 				}
-				catch (Exception ex)
+				catch (JsonSyntaxException ex)
 				{
-					//Warn that the server definition is bad
-					LOG.warn("Server definition {} is invalid and is being ignored", file.getFileName());
+					LOG.info("Server definition {} was invalid, Ignoring", file.getName());
 				}
 			}
+			else if (servers.get(file) != file.lastModified())
+			{
+				try
+				{
+					FileReader fr = new FileReader(file);
+					NioServerDefinition srv = gson.fromJson(fr, NioServerDefinition.class);
+					srv.setId(file.getName());
+					fr.close();
 
-			//Return the map
-			return map;
+					changes.put(srv, Event.SERVER_UPDATE);
+
+					servers.put(file, file.lastModified());
+
+					LOG.info("Server definition {} was updated", file.getName());
+				}
+				catch (JsonSyntaxException ex)
+				{
+					LOG.info("Server definition {} was invalid, Using Previous Definition", file.getName());
+				}
+			}
 		}
-		//Otherwise we are doing a normal check
-		else
+
+		//Get a list of all the servers we currently know about
+		HashSet<File> files = new HashSet<File>();
+		files.addAll(servers.keySet());
+
+		//Remove the ones that still exist
+		files.removeAll(Arrays.asList(dir.listFiles()));
+
+		//What remains now is all the server which have been deleted
+		for (File f : files)
 		{
-			//Poll the watcher for changes
-			WatchKey key = watcher.poll();
+			NioServerDefinition srv = new NioServerDefinition();
+			srv.setId(f.getName());
+			changes.put(srv, Event.SERVER_REMOVE);
 
-			//If there are some
-			if (key != null)
-			{
-				HashMap<NioServerDefinition, Event> map = new HashMap<NioServerDefinition, Event>();
+			servers.remove(f);
 
-				//Loop through all the events which have occured since we last checked
-				for (WatchEvent<?> event : key.pollEvents())
-				{
-					try
-					{
-						//Get the event
-						WatchEvent<Path> e = (WatchEvent<Path>) event;
-
-						//Get the actual path to the file
-						Path file = path.resolve(e.context());
-
-						//If it is an existing server that has been deleted we are removing the server
-						if (e.kind() == ENTRY_DELETE)
-						{
-							NioServerDefinition config = new NioServerDefinition();
-							config.setId(e.context().getFileName().toString());
-
-							LOG.info("Server definition {} was removed", file.getFileName());
-							map.put(config, Event.SERVER_REMOVE);
-						}
-						else
-						{
-							//Read the config file
-							BufferedReader reader = Files.newBufferedReader(file, Charset.defaultCharset());
-							NioServerDefinition config = gson.fromJson(reader, NioServerDefinition.class);
-							config.setId(file.getFileName().toString());
-
-							//If its a new file then we are adding a server
-							if (e.kind() == ENTRY_CREATE)
-							{
-								LOG.info("Server definition {} was added", file.getFileName());
-								map.put(config, Event.SERVER_ADD);
-							}
-							//If it is an existing server that has been modified then we are updating a server
-							else if (e.kind() == ENTRY_MODIFY)
-							{
-								LOG.info("Server definition {} was modified", file.getFileName());
-								map.put(config, Event.SERVER_UPDATE);
-							}
-						}
-					}
-					catch (Exception ex)
-					{
-						LOG.warn("The server definition {} is invalid, ignoring (existing servers are not removed by this)", ((Path) event.context()).getFileName());
-					}
-				}
-
-				return map;
-			}
-			else
-			{
-				//Don't return null for collections
-				return Collections.EMPTY_MAP;
-			}
+			LOG.info("Server definition {} was removed", f.getName());
 		}
+
+		return changes;
 	}
 }

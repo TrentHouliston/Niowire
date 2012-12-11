@@ -7,7 +7,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
- * Unit tests for the UID generator
+ * Unit tests for the {@link UidGenerator}
  *
  * @author Trent Houliston
  */

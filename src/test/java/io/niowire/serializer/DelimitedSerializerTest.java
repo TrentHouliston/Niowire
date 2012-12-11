@@ -18,7 +18,6 @@ package io.niowire.serializer;
 
 import io.niowire.data.NioPacket;
 import java.io.IOException;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import org.junit.Test;
@@ -26,8 +25,9 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
+ * Unit tests for the {@link DelimitedSerializer}
  *
- * @author trent
+ * @author Trent Houliston
  */
 public class DelimitedSerializerTest
 {
