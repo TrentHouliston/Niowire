@@ -32,7 +32,6 @@ public class NioObjectFactory<T extends NioObject>
 
 	private final String className;
 	private final Map<String, Object> configuration;
-	private final Class<T> clazz;
 
 	/**
 	 * This constructs a new Object factory using the passed class name and the
@@ -44,29 +43,13 @@ public class NioObjectFactory<T extends NioObject>
 	 *
 	 * @throws NiowireException if the class was not found
 	 */
-	public NioObjectFactory(String className, Map<String, Object> configuration) throws NioObjectCreationException
+	public NioObjectFactory(String className, Map<String, Object> configuration)
 	{
-		try
-		{
-			//Store our class name
-			this.className = className;
+		//Store our class name
+		this.className = className;
 
-			//Create a class object from our class name
-			this.clazz = (Class<T>) Class.forName(className);
-
-			//Check the class we just found is actually a NioObject
-			if(!NioObject.class.isAssignableFrom(clazz))
-			{
-				throw new NioObjectCreationException(className + " is does not implement NioObject");
-			}
-
-			//Store our configuration in an unmodifyable way
-			this.configuration = Collections.unmodifiableMap(configuration);
-		}
-		catch (Exception ex)
-		{
-			throw new NioObjectCreationException(ex);
-		}
+		//Store our configuration in an unmodifyable way
+		this.configuration = Collections.unmodifiableMap(configuration);
 	}
 
 	/**
@@ -82,6 +65,15 @@ public class NioObjectFactory<T extends NioObject>
 	{
 		try
 		{
+			//Create a class object from our class name
+			Class<T> clazz = (Class<T>) Class.forName(className);
+
+			//Check the class we just found is actually a NioObject
+			if (!NioObject.class.isAssignableFrom(clazz))
+			{
+				throw new NioObjectCreationException(className + " is does not implement NioObject");
+			}
+
 			//Create a new instance
 			T obj = clazz.newInstance();
 

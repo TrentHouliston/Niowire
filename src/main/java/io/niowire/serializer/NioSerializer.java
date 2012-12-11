@@ -64,7 +64,7 @@ public interface NioSerializer extends NioObject, NioContextUser, ReadableByteCh
 	 *
 	 * @throws IOException if there was an IOException while serializing
 	 */
-	public void serialize(List<NioPacket> packets) throws IOException;
+	public void serialize(NioPacket packets) throws IOException;
 
 	/**
 	 * Reading from this Serializer means to read out from the bytes which are

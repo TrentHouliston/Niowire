@@ -27,7 +27,6 @@ import java.nio.channels.*;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -191,7 +190,7 @@ public class NioSocketServer implements Runnable
 						buffer.flip();
 
 						//Write as much data as we can to the client
-						connection.write(buffer);
+						chan.write(buffer);
 					}
 
 					//We are done with this key

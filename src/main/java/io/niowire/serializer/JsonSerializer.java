@@ -18,8 +18,8 @@ package io.niowire.serializer;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.niowire.data.NioPacket;
 import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * This serializer expects each line to be a JSON object, which it will
@@ -56,8 +56,8 @@ public class JsonSerializer extends LineSerializer
 	 * @return a string representation of the passed object in JSON
 	 */
 	@Override
-	protected String serializeString(Object obj)
+	protected String serializeString(NioPacket obj)
 	{
-		return g.toJson(obj);
+		return g.toJson(obj.getData());
 	}
 }

@@ -165,12 +165,6 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 		//Deserialize the data
 		List<NioPacket> packets = serializer.deserialize(src);
 
-		for (NioPacket packet : packets)
-		{
-			System.out.println(packet.getData().toString());
-			System.out.println(packet.getData().getClass().getName());
-		}
-
 		//Loop through all the packets
 		for (NioPacket packet : packets)
 		{
@@ -335,9 +329,10 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 		 *
 		 * @param packet the packet to be written
 		 */
-		public void write(List<NioPacket> packets) throws IOException
+		public void write(NioPacket packets) throws IOException
 		{
 			serializer.serialize(packets);
+			refreshInterestOps();
 		}
 
 		/**

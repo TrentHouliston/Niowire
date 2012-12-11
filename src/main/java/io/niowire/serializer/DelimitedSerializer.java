@@ -16,14 +16,13 @@
  */
 package io.niowire.serializer;
 
+import io.niowire.data.NioPacket;
+import io.niowire.server.NioConnection.Context;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.LinkedList;
 import java.util.List;
-import io.niowire.data.NioPacket;
-import io.niowire.server.NioConnection;
-import io.niowire.server.NioConnection.Context;
-import java.nio.channels.ClosedChannelException;
 import java.util.Queue;
 
 /**
@@ -176,7 +175,7 @@ public abstract class DelimitedSerializer implements NioSerializer
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void serialize(List<NioPacket> packets) throws IOException
+	public void serialize(NioPacket packet) throws IOException
 	{
 		//Check if the channel is closed
 		if (!open)
@@ -185,7 +184,7 @@ public abstract class DelimitedSerializer implements NioSerializer
 		}
 
 		//Serialize our packets into byte buffers
-		ByteBuffer buff = serializeBlob(packets);
+		ByteBuffer buff = serializeBlob(packet);
 
 		//Add these buffers to the queue
 		sendQueue.add(buff);
@@ -271,7 +270,7 @@ public abstract class DelimitedSerializer implements NioSerializer
 
 	protected abstract List<NioPacket> deserializeBlob(ByteBuffer blob) throws IOException;
 
-	protected abstract ByteBuffer serializeBlob(List<NioPacket> objects) throws IOException;
+	protected abstract ByteBuffer serializeBlob(NioPacket objects) throws IOException;
 
 	protected abstract byte[] getDelimiter();
 }

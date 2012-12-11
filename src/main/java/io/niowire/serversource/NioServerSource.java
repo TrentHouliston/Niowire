@@ -16,11 +16,10 @@
  */
 package io.niowire.serversource;
 
+import io.niowire.entities.NioObject;
+import io.niowire.server.NioSocketServer;
 import java.io.IOException;
 import java.util.Map;
-import io.niowire.entities.NioObject;
-import io.niowire.entities.NioObjectFactory;
-import io.niowire.server.NioSocketServer;
 
 /**
  * This interface defines a server source. A server source will monitor a list

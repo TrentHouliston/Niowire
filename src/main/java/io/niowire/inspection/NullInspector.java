@@ -19,10 +19,6 @@ package io.niowire.inspection;
 import io.niowire.data.NioPacket;
 import io.niowire.server.NioConnection.Context;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -34,22 +30,42 @@ import java.util.Map;
  */
 public class NullInspector implements NioInspector
 {
-//Our context
 
+	//Our context
 	private Context context;
 
+	/**
+	 * We use the UID generator to generate our UID based on the remoteAddress
+	 * socket
+	 *
+	 * @return the UID
+	 */
 	@Override
 	public String getUid()
 	{
 		return UidGenerator.addressToUid(context.getRemoteAddress());
 	}
 
+	/**
+	 * We do nothing while inspecting, we just return whatever we are given
+	 *
+	 * @param line the line we are inspecting (just returned)
+	 *
+	 * @return the line we were given
+	 *
+	 * @throws NioAuthenticationException does not get thrown ever in this class
+	 */
 	@Override
 	public NioPacket inspect(NioPacket line) throws NioAuthenticationException
 	{
 		return line;
 	}
 
+	/**
+	 * Returns if we should time out or not
+	 *
+	 * @return false
+	 */
 	@Override
 	public boolean timeout()
 	{
@@ -57,18 +73,27 @@ public class NullInspector implements NioInspector
 		return false;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void setContext(Context context)
 	{
 		this.context = context;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void configure(Map<String, Object> configuration) throws Exception
 	{
 		//Do nothing
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void close() throws IOException
 	{

@@ -2,10 +2,8 @@ package io.niowire.inspection;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 /**
@@ -24,7 +22,7 @@ public class UidGeneratorTest
 	 * Test the method which accepts a socket address
 	 */
 	@Test
-	public void testAddressToUid_InetSocketAddress()
+	public void testAddressToUid()
 	{
 		try
 		{

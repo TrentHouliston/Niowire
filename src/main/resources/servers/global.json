@@ -10,11 +10,12 @@
 	},
 
 	"inspectorFactory" : {
-		"className" : "io.niowire.inspection.NullInspector",
-		"configuration" : {}
+		"className" : "io.niowire.inspection.NullInspector"
 	},
 
 	"serviceFactories" : [
-
+	{
+		"className" : "io.niowire.service.EchoService"
+	}
 	]
 }

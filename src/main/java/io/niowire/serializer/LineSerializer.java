@@ -83,16 +83,11 @@ public class LineSerializer extends DelimitedSerializer
 	 * @return a byte buffer containing our serialized objects
 	 */
 	@Override
-	protected ByteBuffer serializeBlob(List<NioPacket> objects) throws CharacterCodingException
+	protected ByteBuffer serializeBlob(NioPacket packet) throws CharacterCodingException
 	{
 		StringBuffer buffer = new StringBuffer();
 
-		for (NioPacket packet : objects)
-		{
-			buffer.append(serializeString(packet.getData())).append("\n");
-		}
-
-		return ENCODER.encode(CharBuffer.wrap(buffer));
+		return ENCODER.encode(CharBuffer.wrap(String.format("%s\n", serializeString(packet))));
 	}
 
 	/**
@@ -152,8 +147,8 @@ public class LineSerializer extends DelimitedSerializer
 	 *
 	 * @return a string representation of the object
 	 */
-	protected String serializeString(Object obj)
+	protected String serializeString(NioPacket obj)
 	{
-		return obj.toString();
+		return obj.getData().toString();
 	}
 }
