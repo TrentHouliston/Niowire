@@ -25,6 +25,8 @@ package io.niowire;
  */
 public class NiowireException extends Exception
 {
+	//Serial Version UID
+	private static final long serialVersionUID = 1L;
 
 	/**
 	 * Default constructor, has no message or cause.

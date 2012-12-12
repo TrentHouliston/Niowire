@@ -60,11 +60,11 @@ public interface NioSerializer extends NioObject, NioContextUser, ReadableByteCh
 	 * until such a time as they can be read (maybe partially) out from the
 	 * socket.
 	 *
-	 * @param packets the packets to be serialized
+	 * @param packet the packets to be serialized
 	 *
 	 * @throws IOException if there was an IOException while serializing
 	 */
-	public void serialize(NioPacket packets) throws IOException;
+	public void serialize(NioPacket packet) throws IOException;
 
 	/**
 	 * Reading from this Serializer means to read out from the bytes which are

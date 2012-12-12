@@ -39,15 +39,15 @@ public class LineSerializer extends DelimitedSerializer
 	/**
 	 * Our charset that we are going to use
 	 */
-	private Charset CHARSET;
+	private Charset CHARSET = null;
 	/**
 	 * Our encoder (note not thread safe)
 	 */
-	private CharsetDecoder DECODER;
+	private CharsetDecoder DECODER = null;
 	/**
 	 * Our decoder (not not thread safe)
 	 */
-	private CharsetEncoder ENCODER;
+	private CharsetEncoder ENCODER = null;
 
 	/**
 	 * This method overrides from the Delimited serializer and deserializes the
@@ -81,9 +81,12 @@ public class LineSerializer extends DelimitedSerializer
 	 * This method is used to serialize a string into a ByteBuffer by using our
 	 * charset to convert it into its binary form
 	 *
-	 * @param objects the objects to be serialized
+	 * @param packet the objects to be serialized
 	 *
 	 * @return a byte buffer containing our serialized objects
+	 *
+	 * @throws CharacterCodingException if the encoding that was given is
+	 *                                     invalid
 	 */
 	@Override
 	protected ByteBuffer serializeBlob(NioPacket packet) throws CharacterCodingException

@@ -32,7 +32,7 @@ public class NullInspector implements NioInspector
 {
 
 	//Our context
-	private Context context;
+	private Context context = null;
 
 	/**
 	 * We use the UID generator to generate our UID based on the remoteAddress

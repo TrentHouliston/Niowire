@@ -16,7 +16,6 @@
  */
 package io.niowire.entities;
 
-import io.niowire.NiowireException;
 import java.util.Collections;
 import java.util.Map;
 
@@ -24,6 +23,8 @@ import java.util.Map;
  * This class is used to create NioObjects using reflection from a Class Name
  * and a configuration. It will use these to construct and configure the class
  * before returning it.
+ *
+ * @param <T> the type of NioObject which this class returns.
  *
  * @author Trent Houliston
  */
@@ -40,8 +41,6 @@ public class NioObjectFactory<T extends NioObject>
 	 * @param className     the class name of the object
 	 * @param configuration the configuration map to be used when creating the
 	 *                         object
-	 *
-	 * @throws NiowireException if the class was not found
 	 */
 	public NioObjectFactory(String className, Map<String, Object> configuration)
 	{
@@ -80,6 +79,11 @@ public class NioObjectFactory<T extends NioObject>
 			//Configure this instance
 			obj.configure(configuration);
 			return obj;
+		}
+		//Explicitly catch the runtime exception, we want to catch everything
+		catch (RuntimeException ex)
+		{
+			throw new NioObjectCreationException(ex);
 		}
 		catch (Exception ex)
 		{

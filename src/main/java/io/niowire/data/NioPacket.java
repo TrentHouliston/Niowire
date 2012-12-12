@@ -40,8 +40,8 @@ public class NioPacket implements Comparable<NioPacket>
 	private Object data;
 
 	/**
-	 * Construct a new NioPacket containing this data from the source (the
-	 * UID of the connection)
+	 * Construct a new NioPacket containing this data from the source (the UID
+	 * of the connection)
 	 *
 	 * @param uid  the unique identifier for the NioConnection which made this
 	 *                object
@@ -109,5 +109,76 @@ public class NioPacket implements Comparable<NioPacket>
 	public int compareTo(NioPacket o)
 	{
 		return Long.compare(this.getTimestamp(), o.getTimestamp());
+	}
+
+	/**
+	 * Generates a HashCode for this object based on the data contained in it.
+	 *
+	 * @return a hash code for this object
+	 */
+	@Override
+	public int hashCode()
+	{
+		//Build our hashcode
+		int hash = 7;
+		hash = 97 * hash + (int) (this.timestamp ^ (this.timestamp >>> 32));
+		hash = 97 * hash + (this.source != null ? this.source.hashCode() : 0);
+		hash = 97 * hash + (this.data != null ? this.data.hashCode() : 0);
+
+		//Return our hashcode
+		return hash;
+	}
+
+	/**
+	 * Checks for equality with the passed object
+	 *
+	 * @param obj the object to check
+	 *
+	 * @return true if the other object is equal to this object, false
+	 *            otherwise.
+	 */
+	@Override
+	public boolean equals(Object obj)
+	{
+		//Check fo nulls and classes
+		if (obj == null)
+		{
+			return false;
+		}
+		if (getClass() != obj.getClass())
+		{
+			return false;
+		}
+		//Cast our object
+		final NioPacket other = (NioPacket) obj;
+
+		//Check the member variables
+		if (this.timestamp != other.timestamp)
+		{
+			return false;
+		}
+		if ((this.source == null) ? (other.source != null) : !this.source.equals(other.source))
+		{
+			return false;
+		}
+		if (this.data != other.data && (this.data == null || !this.data.equals(other.data)))
+		{
+			return false;
+		}
+
+		//return true if we haven't already returned false
+		return true;
+	}
+
+	/**
+	 * Returns a String representation of this object
+	 *
+	 * @return a string representation of this object
+	 */
+	@Override
+	public String toString()
+	{
+		//Build our string
+		return "NioPacket{" + "timestamp=" + timestamp + ", source=" + source + ", data=" + data + '}';
 	}
 }

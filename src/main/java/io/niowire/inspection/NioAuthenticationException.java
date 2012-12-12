@@ -27,6 +27,8 @@ import io.niowire.NiowireException;
  */
 public class NioAuthenticationException extends NiowireException
 {
+	//Serial Version UID
+	private static final long serialVersionUID = 1L;
 
 	/**
 	 * Default constructor, has no message or cause.

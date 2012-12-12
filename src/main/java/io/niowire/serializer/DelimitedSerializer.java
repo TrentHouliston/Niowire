@@ -51,7 +51,7 @@ public abstract class DelimitedSerializer implements NioSerializer
 	//This buffer is allocated as needed if there is any leftover data (split packets)
 	private ByteBuffer residual = null;
 	private boolean open = true;
-	protected Context context;
+	protected Context context = null;
 	private Queue<ByteBuffer> sendQueue = new LinkedList<ByteBuffer>();
 	private ByteBuffer rebuffer = null;
 
@@ -286,17 +286,50 @@ public abstract class DelimitedSerializer implements NioSerializer
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void rebuffer(ByteBuffer in)
+	public void rebuffer(ByteBuffer data)
 	{
 		//Get the byte buffer
-		rebuffer = ByteBuffer.allocate(in.remaining());
-		rebuffer.put(in);
+		rebuffer = ByteBuffer.allocate(data.remaining());
+		rebuffer.put(data);
 		rebuffer.flip();
 	}
 
+	/**
+	 * This method is used to deserialize a blob of data after we have found our
+	 * delimiter. It passes a byte buffer with its position and limit set to the
+	 * data of interest.
+	 *
+	 * @param blob the {@link ByteBuffer} with its position and limit set to our
+	 *                point of interest.
+	 *
+	 * @return a list of packets which were found in that delimited blob
+	 *
+	 * @throws IOException
+	 */
 	protected abstract List<NioPacket> deserializeBlob(ByteBuffer blob) throws IOException;
 
+	/**
+	 * This method is used to convert a NioPacket object into a serialized byte
+	 * buffer form. It should accept a packet and convert it into a ByteBuffer
+	 * containing the data to be sent to the client. When sent to the client a
+	 * delimiter will be added after this ByteBuffers content.
+	 *
+	 * @param packet the packet to be serialized
+	 *
+	 * @return a {@link ByteBuffer} that contains the data to be sent
+	 *
+	 * @throws IOException if there was an IOException while serializing the
+	 *                        packet
+	 */
 	protected abstract ByteBuffer serializeBlob(NioPacket packet) throws IOException;
 
+	/**
+	 * This method should return the multi byte delimiter to use when delimiting
+	 * the incoming data. It should not change as it may miss packets in this
+	 * case.
+	 *
+	 * @return a multi byte delimiter to search and use to split up the incoming
+	 *            data stream
+	 */
 	protected abstract byte[] getDelimiter();
 }

@@ -33,6 +33,9 @@ import io.niowire.serversource.NioServerSource;
 public class Niowire extends Thread
 {
 
+	/**
+	 * The thread group for Niowire
+	 */
 	public static final ThreadGroup THREAD_GROUP = new ThreadGroup("Niowire");
 
 	/**

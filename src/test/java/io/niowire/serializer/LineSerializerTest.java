@@ -22,8 +22,6 @@ import io.niowire.server.NioConnection.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
@@ -33,8 +31,9 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
+ * Unit tests for the {@link LineSerializer}
  *
- * @author trent
+ * @author Trent Houliston
  */
 public class LineSerializerTest
 {

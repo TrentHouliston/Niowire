@@ -3,6 +3,7 @@ package io.niowire.inspection;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Locale;
 
 /**
  * This class generates a Uid from an IP/Port combination
@@ -48,6 +49,8 @@ public class UidGenerator
 	 *
 	 * @return a String containing the hex representation of the address and
 	 *            port
+	 *
+	 * @throws UnknownHostException if the passed address is unknown
 	 */
 	public static String addressToUid(String address, int port) throws UnknownHostException
 	{
@@ -79,7 +82,7 @@ public class UidGenerator
 		str.append(String.format("%04x", port));
 
 		//Return the value
-		return str.toString().toUpperCase();
+		return str.toString().toUpperCase(Locale.ENGLISH);
 	}
 
 	/**
