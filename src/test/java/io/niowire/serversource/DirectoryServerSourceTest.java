@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Scanner;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -35,6 +37,59 @@ import static org.junit.Assert.*;
 public class DirectoryServerSourceTest
 {
 
+	//Our temporary directory
+	private File tempDir;
+
+	/**
+	 * This sets up the test directory with 5 server files (all the same)
+	 *
+	 * @return the directory that contains the server definition files
+	 *
+	 * @throws Exception
+	 */
+	@Before
+	public void setUp() throws Exception
+	{
+
+		//Create a temporary directory
+		File tmpdir = File.createTempFile("DirectoryServerSourceTest", "");
+		tmpdir.delete();
+		tmpdir.mkdir();
+
+		//Make sure it's a file
+		assertTrue(tmpdir.isDirectory());
+
+		//Get our test file from our test resources
+		String test = new Scanner(DirectoryServerSourceTest.class.getResourceAsStream("test.json")).useDelimiter("\\Z").next();
+
+		//Create an array for our server defintions
+		File[] serverDefs = new File[5];
+
+		for (int i = 0; i < serverDefs.length; i++)
+		{
+			//Create a new file for this server
+			serverDefs[i] = new File(tmpdir, Integer.toString(i + 1));
+
+			//Write the test data into the file
+			FileWriter fw = new FileWriter(serverDefs[i]);
+			fw.write(test);
+
+			//Close it
+			fw.close();
+		}
+
+		tempDir = tmpdir;
+	}
+
+	/**
+	 * Delete the temporary folder when we are done with it
+	 */
+	@After
+	public void teardown()
+	{
+		tempDir.delete();
+	}
+
 	/**
 	 * Tests that on startup, all of the files in the directory are returned as
 	 * server definitions.
@@ -44,9 +99,6 @@ public class DirectoryServerSourceTest
 	@Test
 	public void testDirectoryServerInitialAdd() throws Exception
 	{
-		//Setup our directory
-		File tempDir = setUpTempDir();
-
 		//Create our DirectoryServerSource object
 		DirectoryServerSource source = new DirectoryServerSource();
 
@@ -103,9 +155,6 @@ public class DirectoryServerSourceTest
 	@Test
 	public void testUpdateServer() throws Exception
 	{
-		//Setup our directory to use
-		File tempDir = setUpTempDir();
-
 		//Create our DirectoryServerSource object
 		DirectoryServerSource source = new DirectoryServerSource();
 
@@ -163,9 +212,6 @@ public class DirectoryServerSourceTest
 	@Test
 	public void testDeleteServer() throws Exception
 	{
-		//Setup our directory to use
-		File tempDir = setUpTempDir();
-
 		//Create our DirectoryServerSource object
 		DirectoryServerSource source = new DirectoryServerSource();
 
@@ -221,9 +267,6 @@ public class DirectoryServerSourceTest
 	@Test
 	public void testAddServer() throws Exception
 	{
-		//Setup our directory to use
-		File tempDir = setUpTempDir();
-
 		//Create our DirectoryServerSource object
 		DirectoryServerSource source = new DirectoryServerSource();
 
@@ -287,9 +330,6 @@ public class DirectoryServerSourceTest
 	@Test
 	public void testInvalidServerDefinition() throws Exception
 	{
-		//Setup our directory to use
-		File tempDir = setUpTempDir();
-
 		//Create our DirectoryServerSource object
 		DirectoryServerSource source = new DirectoryServerSource();
 
@@ -313,51 +353,9 @@ public class DirectoryServerSourceTest
 		//Get the changes (since the errors were invalid it should be nothing)
 		Map<NioServerDefinition, Event> servers = source.getChanges();
 
-		assertTrue("No changes should have been returned",servers.isEmpty());
+		assertTrue("No changes should have been returned", servers.isEmpty());
 
 		//Close our source
 		source.close();
-	}
-
-	/**
-	 * This sets up the test directory with 5 server files (all the same)
-	 *
-	 * @return the directory that contains the server definition files
-	 *
-	 * @throws Exception
-	 */
-	private File setUpTempDir() throws Exception
-	{
-		//Create a temporary directory
-		File tmpdir = File.createTempFile("DirectoryServerSourceTest", "");
-		tmpdir.delete();
-		tmpdir.mkdir();
-
-		//Make sure it's a file
-		assertTrue(tmpdir.isDirectory());
-
-		//Delete the dir on exit
-		tmpdir.deleteOnExit();
-
-		//Get our test file from our test resources
-		String test = new Scanner(DirectoryServerSourceTest.class.getResourceAsStream("test.json")).useDelimiter("\\Z").next();
-
-		//Create an array for our server defintions
-		File[] serverDefs = new File[5];
-
-		for (int i = 0; i < serverDefs.length; i++)
-		{
-			//Create a new file for this server
-			serverDefs[i] = new File(tmpdir, Integer.toString(i + 1));
-
-			//Write the test data into the file
-			FileWriter fw = new FileWriter(serverDefs[i]);
-			fw.write(test);
-
-			//Close it
-			fw.close();
-		}
-
-		return tmpdir;
 	}
 }
