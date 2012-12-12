@@ -88,9 +88,7 @@ public class LineSerializer extends DelimitedSerializer
 	@Override
 	protected ByteBuffer serializeBlob(NioPacket packet) throws CharacterCodingException
 	{
-		StringBuffer buffer = new StringBuffer();
-
-		return ENCODER.encode(CharBuffer.wrap(String.format("%s\n", serializeString(packet))));
+		return ENCODER.encode(CharBuffer.wrap(serializeString(packet)));
 	}
 
 	/**
@@ -109,8 +107,8 @@ public class LineSerializer extends DelimitedSerializer
 
 		//Build our charset, encoder and decoders
 		CHARSET = Charset.forName(charset);
-		DECODER = CHARSET.newDecoder().onMalformedInput(CodingErrorAction.IGNORE).onUnmappableCharacter(CodingErrorAction.IGNORE);
-		ENCODER = CHARSET.newEncoder().onMalformedInput(CodingErrorAction.IGNORE).onUnmappableCharacter(CodingErrorAction.IGNORE);
+		DECODER = CHARSET.newDecoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
+		ENCODER = CHARSET.newEncoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
 	}
 
 	/**

@@ -99,43 +99,63 @@ public class DirectoryServerSource implements NioServerSource
 		//Get our files
 		for (File file : dir.listFiles())
 		{
+			//Check if we already had this server
 			if (!servers.containsKey(file))
 			{
+				//Try to parse the message into an object
 				try
 				{
+					//Read the file and make a server definition from it
 					FileReader fr = new FileReader(file);
 					NioServerDefinition srv = gson.fromJson(fr, NioServerDefinition.class);
 					srv.setId(file.getName());
 					fr.close();
 
+					//Add in that this server has been added
 					changes.put(srv, Event.SERVER_ADD);
 
+					//Add it to the map
 					servers.put(file, file.lastModified());
 
+					//Log that it was added
 					LOG.info("Server definition {} was added", file.getName());
 				}
 				catch (JsonSyntaxException ex)
 				{
+					//Put it in the map so we don't keep looking at it
+					servers.put(file, file.lastModified());
+
+					//If there was an exception ignore it
 					LOG.info("Server definition {} was invalid, Ignoring", file.getName());
 				}
 			}
+			//If we have the server but it's date modified has changed
 			else if (servers.get(file) != file.lastModified())
 			{
+				//Try to build a server defintion
 				try
 				{
+					//Read the file and make a server definition from it
 					FileReader fr = new FileReader(file);
 					NioServerDefinition srv = gson.fromJson(fr, NioServerDefinition.class);
 					srv.setId(file.getName());
 					fr.close();
 
-					changes.put(srv, Event.SERVER_UPDATE);
-
+					//Put it in the servers list
 					servers.put(file, file.lastModified());
 
+					//Add that we are updating the server
+					changes.put(srv, Event.SERVER_UPDATE);
+
+					//Output that we are updating it
 					LOG.info("Server definition {} was updated", file.getName());
 				}
 				catch (JsonSyntaxException ex)
 				{
+					//Put it in the servers list so we don't look at it again
+					servers.put(file, file.lastModified());
+
+					//Output that we are still using the old definition
 					LOG.info("Server definition {} was invalid, Using Previous Definition", file.getName());
 				}
 			}
@@ -151,15 +171,19 @@ public class DirectoryServerSource implements NioServerSource
 		//What remains now is all the server which have been deleted
 		for (File f : files)
 		{
+			//Make a new server definition with the appropriate id (there is no more information)
 			NioServerDefinition srv = new NioServerDefinition();
 			srv.setId(f.getName());
 			changes.put(srv, Event.SERVER_REMOVE);
 
+			//Remove it from the servers list
 			servers.remove(f);
 
+			//Log that we removed it
 			LOG.info("Server definition {} was removed", f.getName());
 		}
 
+		//Return our result
 		return changes;
 	}
 }
