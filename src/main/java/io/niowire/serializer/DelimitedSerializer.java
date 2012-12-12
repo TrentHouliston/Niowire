@@ -207,8 +207,15 @@ public abstract class DelimitedSerializer implements NioSerializer
 	 * {@inheritDoc}
 	 */
 	@Override
-	public int read(ByteBuffer buffer)
+	public int read(ByteBuffer buffer) throws IOException
 	{
+		//Check if the channel is closed
+		if (!open)
+		{
+			throw new ClosedChannelException();
+		}
+
+		//This is to store how many bytes we have read
 		int read = 0;
 
 		//If we have a rebuffer then add it first
@@ -277,8 +284,14 @@ public abstract class DelimitedSerializer implements NioSerializer
 	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean hasData()
+	public boolean hasData() throws IOException
 	{
+		//Check if the channel is closed
+		if (!open)
+		{
+			throw new ClosedChannelException();
+		}
+
 		return !sendQueue.isEmpty();
 	}
 
@@ -286,8 +299,14 @@ public abstract class DelimitedSerializer implements NioSerializer
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void rebuffer(ByteBuffer data)
+	public void rebuffer(ByteBuffer data) throws IOException
 	{
+		//Check if the channel is closed
+		if (!open)
+		{
+			throw new ClosedChannelException();
+		}
+
 		//Get the byte buffer
 		rebuffer = ByteBuffer.allocate(data.remaining());
 		rebuffer.put(data);

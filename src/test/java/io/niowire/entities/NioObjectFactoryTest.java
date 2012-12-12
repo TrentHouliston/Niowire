@@ -61,14 +61,52 @@ public class NioObjectFactoryTest
 		try
 		{
 			//Make a new object
-			NioObjectFactory<NioObjectImpl> factory = new NioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.singletonMap("Key", new Object()));
+			NioObjectFactory<NioObjectImpl> factory = new NioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.singletonMap("exception", new Object()));
 
 			//Try to make a new object (should fail since the map contains something)
 			//This was set up in the Impl class
-			NioObjectImpl obj = factory.create();
+			factory.create();
 
 			//If we reached here, an exception was not thrown. Fail the test.
 			fail("An NioObjectCreationException should have been thrown during configuration");
+		}
+		catch (NioObjectCreationException ex)
+		{
+		}
+	}
+
+	/**
+	 * Test that if we try to construct something that's not a NioObject it will
+	 * fail
+	 */
+	@Test
+	public void testNonNioObjectCreation()
+	{
+		try
+		{
+			//Make a new object
+			NioObjectFactory<NioObject> factory = new NioObjectFactory<NioObject>("java.lang.String", Collections.singletonMap("foo", new Object()));
+			factory.create();
+			fail("An exception should have been thrown as String is not a NioObject");
+		}
+		catch (NioObjectCreationException ex)
+		{
+		}
+	}
+
+	/**
+	 * Test that runtime exceptions are wrapped when they are thrown into
+	 * checked exceptions of type {@link NioObjectCreationException}
+	 */
+	@Test
+	public void testRuntimeExceptionsAreWrapped()
+	{
+		try
+		{
+			//Make a new object
+			NioObjectFactory<NioObject> factory = new NioObjectFactory<NioObject>(NioObjectImpl.class.getName(), Collections.singletonMap("runtime", new Object()));
+			factory.create();
+			fail("An exception should have been thrown here (a wrapped runtime exception)");
 		}
 		catch (NioObjectCreationException ex)
 		{
@@ -82,20 +120,28 @@ public class NioObjectFactoryTest
 	{
 
 		/**
-		 * Configure the object. If the map is not empty then this will throw an
-		 * exception (to simulate an error during configuration)
+		 * Configure the object. If the map contains the key "exception" then it
+		 * will throw an {@link Exception}, if it contains the key "runtime" it
+		 * will throw a {@link RuntimeException}
 		 *
-		 * @param configuration either an empty or non empty configuration
+		 * @param configuration a configuration containing either exception,
+		 *                            runtime or nothing.
 		 *
-		 * @throws Exception if the configuration is not empty
+		 * @throws Exception        if the configuration has the "exception" key
+		 * @throws RuntimeException if the configuration has the "runtime" key
 		 */
 		@Override
 		public void configure(Map<String, Object> configuration) throws Exception
 		{
-			//If they give us a non empty configuration use this as a sign to throw an exception
-			if (!configuration.isEmpty())
+			//If they give us an exception key throw an exception
+			if (configuration.containsKey("exception"))
 			{
 				throw new Exception();
+			}
+			//If they give us a runtime key then throw a runtime exception
+			if (configuration.containsKey("runtime"))
+			{
+				throw new RuntimeException();
 			}
 		}
 

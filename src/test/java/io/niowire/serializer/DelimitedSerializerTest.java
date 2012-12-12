@@ -19,6 +19,8 @@ package io.niowire.serializer;
 import io.niowire.data.NioPacket;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.charset.Charset;
 import java.util.*;
 import org.junit.Test;
 
@@ -448,7 +450,71 @@ public class DelimitedSerializerTest
 
 		//Check that we now have no data
 		assertFalse("The serializer should not have data at this point", serializer.hasData());
+	}
 
+	/**
+	 * Tests that when the serializer is closed, the methods throw exceptions
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testClose() throws Exception
+	{
+		//Create a serializer
+		DelimitedSerializer serializer = new DelimitedSerializerImpl();
+
+		//Close it
+		serializer.close();
+
+		//Check that it is closed
+		assertFalse("The serializer should report that it is no longer open", serializer.isOpen());
+
+		//Try to do the serialize method
+		try
+		{
+			serializer.serialize(null);
+			fail("A closed channel exception should have been thrown");
+		}
+		catch (ClosedChannelException ex)
+		{
+		}
+
+		//Try to do the deserialize method
+		try
+		{
+			serializer.deserialize(null);
+			fail("A closed channel exception should have been thrown");
+		}
+		catch (ClosedChannelException ex)
+		{
+		}
+		//Try to do the hasData method
+		try
+		{
+			serializer.hasData();
+			fail("A closed channel exception should have been thrown");
+		}
+		catch (ClosedChannelException ex)
+		{
+		}
+		//Try to do the read method
+		try
+		{
+			serializer.read(null);
+			fail("A closed channel exception should have been thrown");
+		}
+		catch (ClosedChannelException ex)
+		{
+		}
+		//Try to do the rebuffer method
+		try
+		{
+			serializer.rebuffer(null);
+			fail("A closed channel exception should have been thrown");
+		}
+		catch (ClosedChannelException ex)
+		{
+		}
 	}
 
 	/**
@@ -479,7 +545,7 @@ public class DelimitedSerializerTest
 	 * implements it's abstract methods with simple methods that simply either
 	 * store or return the same bytes given to it.
 	 */
-	public class DelimitedSerializerImpl extends DelimitedSerializer
+	public static class DelimitedSerializerImpl extends DelimitedSerializer
 	{
 
 		/**
@@ -527,7 +593,7 @@ public class DelimitedSerializerTest
 		@Override
 		public byte[] getDelimiter()
 		{
-			return "\n".getBytes();
+			return "\n".getBytes(Charset.defaultCharset());
 		}
 
 		/**

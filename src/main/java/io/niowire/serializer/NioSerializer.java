@@ -74,17 +74,21 @@ public interface NioSerializer extends NioObject, NioContextUser, ReadableByteCh
 	 * @param buffer the buffer to read into
 	 *
 	 * @return the number of bytes read
+	 *
+	 * @throws IOException if the serializer is closed
 	 */
 	@Override
-	public int read(ByteBuffer buffer);
+	public int read(ByteBuffer buffer) throws IOException;
 
 	/**
 	 * This method returns true when this serializer has data which has been
 	 * buffered into it to be written to the client.
 	 *
 	 * @return true if there is data to be written, false otherwise
+	 *
+	 * @throws IOException if the serializer is closed
 	 */
-	public boolean hasData();
+	public boolean hasData() throws IOException;
 
 	/**
 	 * This method is used to send data back that could not be dealt with at a
@@ -92,6 +96,8 @@ public interface NioSerializer extends NioObject, NioContextUser, ReadableByteCh
 	 * happens at the same place)
 	 *
 	 * @param data the {@link ByteBuffer} who's data to store
+	 *
+	 * @throws IOException if the serializer is closed
 	 */
-	public void rebuffer(ByteBuffer data);
+	public void rebuffer(ByteBuffer data) throws IOException;
 }
