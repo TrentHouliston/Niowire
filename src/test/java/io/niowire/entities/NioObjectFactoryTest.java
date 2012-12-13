@@ -91,6 +91,8 @@ public class NioObjectFactoryTest
 		}
 		catch (NioObjectCreationException ex)
 		{
+			//Make sure that the exception that was thrown was a real exception and not just a re wrap
+			assertTrue(ex.getCause() == null);
 		}
 	}
 
@@ -110,6 +112,8 @@ public class NioObjectFactoryTest
 		}
 		catch (NioObjectCreationException ex)
 		{
+			//Check the cause was a runtime exception
+			assertTrue(ex.getCause() instanceof RuntimeException);
 		}
 	}
 

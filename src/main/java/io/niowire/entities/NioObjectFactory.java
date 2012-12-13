@@ -65,25 +65,33 @@ public class NioObjectFactory<T extends NioObject>
 		try
 		{
 			//Create a class object from our class name
-			Class<T> clazz = (Class<T>) Class.forName(className);
+			Class<?> clazz = Class.forName(className);
+			Object obj = clazz.newInstance();
 
-			//Check the class we just found is actually a NioObject
-			if (!NioObject.class.isAssignableFrom(clazz))
+			if (obj instanceof NioObject)
+			{
+				//We did check it's type
+				@SuppressWarnings("unchecked")
+				T nioObj = (T) obj;
+
+				//Configure and return
+				nioObj.configure(configuration);
+				return nioObj;
+			}
+			else
 			{
 				throw new NioObjectCreationException(className + " is does not implement NioObject");
 			}
 
-			//Create a new instance
-			T obj = clazz.newInstance();
-
-			//Configure this instance
-			obj.configure(configuration);
-			return obj;
 		}
 		//Explicitly catch the runtime exception, we want to catch everything
 		catch (RuntimeException ex)
 		{
 			throw new NioObjectCreationException(ex);
+		}
+		catch (NioObjectCreationException ex)
+		{
+			throw ex;
 		}
 		catch (Exception ex)
 		{
