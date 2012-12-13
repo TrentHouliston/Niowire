@@ -22,6 +22,7 @@ import io.niowire.serializer.NioSerializer;
 import io.niowire.server.NioPropertyUnchangableException;
 import io.niowire.service.NioService;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -160,7 +161,8 @@ public class NioServerDefinition
 	 */
 	public void setServiceFactories(List<NioObjectFactory<NioService>> serviceFactories)
 	{
-		this.serviceFactories = serviceFactories;
+		//Wrap it so that nobody else has access to our shared state
+		this.serviceFactories = new LinkedList<NioObjectFactory<NioService>>(serviceFactories);
 	}
 
 	/**
@@ -181,7 +183,7 @@ public class NioServerDefinition
 		this.setInspectorFactory(server.getInspectorFactory());
 		this.setServiceFactories(server.getServiceFactories());
 
-		if(this.getPort() != server.getPort())
+		if (this.getPort() != server.getPort())
 		{
 			throw new NioPropertyUnchangableException();
 		}

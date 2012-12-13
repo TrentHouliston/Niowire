@@ -55,13 +55,16 @@ public class NioSocketServer implements Runnable
 	//The server source
 	private final NioServerSource source;
 	//The servers
-	private final HashMap<String, SelectionKey> servers = new HashMap<String, SelectionKey>();
+	private final HashMap<String, SelectionKey> servers = new HashMap<String, SelectionKey>(1);
 
 	/**
 	 * This creates a new NioSocketServer instance which uses the passed
 	 * NioServerSource as it's source of server definitions.
 	 *
 	 * @param source the source of server definitions for this server
+	 *
+	 * @throws NiowireException if there was an exception while setting up the
+	 *                             server.
 	 */
 	public NioSocketServer(NioServerSource source) throws NiowireException
 	{
@@ -75,6 +78,10 @@ public class NioSocketServer implements Runnable
 
 			//Get a selector for our channels
 			channels = Selector.open();
+		}
+		catch (RuntimeException ex)
+		{
+			throw new NiowireException("Was unable to setup the server due to an error", ex);
 		}
 		catch (Exception ex)
 		{
@@ -140,6 +147,15 @@ public class NioSocketServer implements Runnable
 
 							//Log that we have a new connection
 							LOG.info("Server {} has connected", client.socket().getInetAddress().getHostAddress());
+						}
+						catch (RuntimeException ex)
+						{
+							//If we have an exception then we need to kick the client
+							LOG.error("Server {} was rejected as an exception occured during its creation", client.socket().getInetAddress().getHostAddress());
+
+							//Close the client and the key
+							client.close();
+							clientKey.cancel();
 						}
 						catch (Exception ex)
 						{
@@ -257,7 +273,7 @@ public class NioSocketServer implements Runnable
 			}
 			catch (IOException ex)
 			{
-				if (ex instanceof IOException && ex.getMessage().equals("Connection reset by peer"))
+				if (ex.getMessage().equals("Connection reset by peer"))
 				{
 					/*
 					 * This paticular exception occurs from time to time and
@@ -270,6 +286,12 @@ public class NioSocketServer implements Runnable
 					//Otherwise there was an exception of some description that we didn't expect
 					LOG.error("There was an exception while executing in the Socket Server", ex);
 				}
+			}
+			//Explicitly catch RuntimeException (we are intentionally catching everything)
+			catch (RuntimeException ex)
+			{
+				//Warn that an exception was thrown (we don't want to crash if we can help it)
+				LOG.warn("There was an exception while executing in the Socket Server", ex);
 			}
 			catch (Exception ex)
 			{

@@ -55,13 +55,13 @@ public class DirectoryServerSource implements NioServerSource
 	/**
 	 * Our current state
 	 */
-	private HashMap<File, Long> servers = new HashMap<File, Long>();
+	private HashMap<File, Long> servers = new HashMap<File, Long>(1);
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void configure(Map<String, Object> configuration) throws IOException
+	public void configure(Map<String, Object> configuration) throws Exception
 	{
 		//Get our directory from the configuration
 		String directory = (String) configuration.get("directory");
@@ -94,7 +94,7 @@ public class DirectoryServerSource implements NioServerSource
 	public Map<NioServerDefinition, Event> getChanges() throws IOException
 	{
 		//Where we put the changes
-		HashMap<NioServerDefinition, Event> changes = new HashMap<NioServerDefinition, Event>();
+		HashMap<NioServerDefinition, Event> changes = new HashMap<NioServerDefinition, Event>(1);
 
 		//Get our files
 		for (File file : dir.listFiles())
@@ -103,13 +103,13 @@ public class DirectoryServerSource implements NioServerSource
 			if (!servers.containsKey(file))
 			{
 				//Try to parse the message into an object
+				FileReader fr = null;
 				try
 				{
-					//Read the file and make a server definition from it
-					FileReader fr = new FileReader(file);
+					//Read the file and make a server definition from it using the platforms default encoding
+					fr = new FileReader(file);
 					NioServerDefinition srv = gson.fromJson(fr, NioServerDefinition.class);
 					srv.setId(file.getName());
-					fr.close();
 
 					//Add in that this server has been added
 					changes.put(srv, Event.SERVER_ADD);
@@ -128,18 +128,22 @@ public class DirectoryServerSource implements NioServerSource
 					//If there was an exception ignore it
 					LOG.info("Server definition {} was invalid, Ignoring", file.getName());
 				}
+				finally
+				{
+					fr.close();
+				}
 			}
 			//If we have the server but it's date modified has changed
 			else if (servers.get(file) != file.lastModified())
 			{
 				//Try to build a server defintion
+				FileReader fr = null;
 				try
 				{
 					//Read the file and make a server definition from it
-					FileReader fr = new FileReader(file);
+					fr = new FileReader(file);
 					NioServerDefinition srv = gson.fromJson(fr, NioServerDefinition.class);
 					srv.setId(file.getName());
-					fr.close();
 
 					//Put it in the servers list
 					servers.put(file, file.lastModified());
@@ -158,11 +162,15 @@ public class DirectoryServerSource implements NioServerSource
 					//Output that we are still using the old definition
 					LOG.info("Server definition {} was invalid, Using Previous Definition", file.getName());
 				}
+				finally
+				{
+					fr.close();
+				}
 			}
 		}
 
 		//Get a list of all the servers we currently know about
-		HashSet<File> files = new HashSet<File>();
+		HashSet<File> files = new HashSet<File>(servers.size());
 		files.addAll(servers.keySet());
 
 		//Remove the ones that still exist

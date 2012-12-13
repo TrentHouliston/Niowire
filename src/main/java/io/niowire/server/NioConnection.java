@@ -29,7 +29,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,6 +117,12 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 				}
 			}
 		}
+		//Explicitly catch runtime exception (we want to wrap all exceptions)
+		catch (RuntimeException ex)
+		{
+			//Wrap it in a connection exception and throw it
+			throw new NioConnectionException(ex);
+		}
 		//Catch any exception that might occur
 		catch (Exception ex)
 		{
@@ -126,7 +131,15 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 		}
 	}
 
-	public void updateInterestOps() throws ClosedChannelException
+	/**
+	 * Updates the interest operations on the SelectionKey, it checks if the
+	 * serializer has data to write. And if it does then it updates the
+	 * selection key to listen for {@link SelectionKey.OP_WRITE} operations as
+	 * well
+	 *
+	 * @throws IOException
+	 */
+	public void updateInterestOps() throws IOException
 	{
 		if (!open)
 		{
@@ -207,10 +220,11 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	 *
 	 * @return the number of bytes read
 	 *
-	 * @throws ClosedChannelException if the connection has been closed
+	 * @throws IOException if the connection has been closed or the serializer
+	 *                        has closed
 	 */
 	@Override
-	public int read(ByteBuffer dst) throws ClosedChannelException
+	public int read(ByteBuffer dst) throws IOException
 	{
 		//Check that we are open
 		if (!open)
@@ -233,8 +247,10 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	 * serializer.
 	 *
 	 * @param buffer the buffer to be re-buffered
+	 *
+	 * @throws IOException if the serializer is closed
 	 */
-	public void rebuffer(ByteBuffer buffer)
+	public void rebuffer(ByteBuffer buffer) throws IOException
 	{
 		serializer.rebuffer(buffer);
 	}
@@ -321,16 +337,14 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	public class Context
 	{
 
-		private final HashMap<String, Object> properties = new HashMap<String, Object>();
-
 		/**
 		 * Tell this connection to refresh it's interest operations. This should
 		 * be run by a service when it's interest state has change and it now
 		 * has data which it needs to write back to the client.
 		 *
-		 * @throws ClosedChannelException
+		 * @throws IOException if the connection is closed
 		 */
-		public void refreshInterestOps() throws ClosedChannelException
+		public void refreshInterestOps() throws IOException
 		{
 			//Update our interest ops
 			updateInterestOps();
@@ -340,10 +354,12 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 		 * Writes a packet back to the client
 		 *
 		 * @param packet the packet to be written
+		 *
+		 * @throws IOException if the serializer is closed
 		 */
-		public void write(NioPacket packets) throws IOException
+		public void write(NioPacket packet) throws IOException
 		{
-			serializer.serialize(packets);
+			serializer.serialize(packet);
 			refreshInterestOps();
 		}
 
