@@ -557,10 +557,10 @@ public class DelimitedSerializerTest
 		 * @return a {@link NioPacket} object containing a byte array of the
 		 *               data
 		 *
-		 * @throws IOException
+		 * @throws NioInvalidDataException
 		 */
 		@Override
-		public List<NioPacket> deserializeBlob(ByteBuffer blob) throws IOException
+		public List<NioPacket> deserializeBlob(ByteBuffer blob) throws NioInvalidDataException
 		{
 			byte[] bytes = new byte[blob.remaining()];
 			blob.get(bytes);
@@ -576,10 +576,10 @@ public class DelimitedSerializerTest
 		 *
 		 * @return a ByteBuffer containing the byte array in the packet
 		 *
-		 * @throws IOException
+		 * @throws NioInvalidDataException
 		 */
 		@Override
-		public ByteBuffer serializeBlob(NioPacket packet) throws IOException
+		public ByteBuffer serializeBlob(NioPacket packet) throws NioInvalidDataException
 		{
 			byte[] data = (byte[]) packet.getData();
 			return ByteBuffer.wrap(data);

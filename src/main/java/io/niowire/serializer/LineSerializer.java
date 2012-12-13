@@ -58,14 +58,24 @@ public class LineSerializer extends DelimitedSerializer
 	 *
 	 * @return A NioPacket containing our string
 	 *
-	 * @throws CharacterCodingException if the encoding we are using does not
-	 *                                     exist
+	 * @throws NioInvalidDataException if the encoding we are using does not
+	 *                                    exist or it is thrown by an
+	 *                                    implementing class
 	 */
 	@Override
-	protected List<NioPacket> deserializeBlob(ByteBuffer blob) throws CharacterCodingException
+	protected List<NioPacket> deserializeBlob(ByteBuffer blob) throws NioInvalidDataException
 	{
 		//Decode the string
-		String str = DECODER.decode(blob).toString();
+		String str;
+
+		try
+		{
+			str = DECODER.decode(blob).toString();
+		}
+		catch (CharacterCodingException ex)
+		{
+			throw new NioInvalidDataException(ex);
+		}
 
 		//Remove any carriage returns
 		str = str.replaceAll("\r", "");
@@ -85,13 +95,19 @@ public class LineSerializer extends DelimitedSerializer
 	 *
 	 * @return a byte buffer containing our serialized objects
 	 *
-	 * @throws CharacterCodingException if the encoding that was given is
-	 *                                     invalid
+	 * @throws NioInvalidDataException if the data that was given is invalid
 	 */
 	@Override
-	protected ByteBuffer serializeBlob(NioPacket packet) throws CharacterCodingException
+	protected ByteBuffer serializeBlob(NioPacket packet) throws NioInvalidDataException
 	{
-		return ENCODER.encode(CharBuffer.wrap(serializeString(packet)));
+		try
+		{
+			return ENCODER.encode(CharBuffer.wrap(serializeString(packet)));
+		}
+		catch (CharacterCodingException ex)
+		{
+			throw new NioInvalidDataException(ex);
+		}
 	}
 
 	/**
@@ -136,8 +152,10 @@ public class LineSerializer extends DelimitedSerializer
 	 * @param str the string to deserialize
 	 *
 	 * @return the string passed in
+	 *
+	 * @throws NioInvalidDataException if the passed in data was invalid
 	 */
-	protected Object deserializeString(String str)
+	protected Object deserializeString(String str) throws NioInvalidDataException
 	{
 		return str;
 	}
@@ -150,8 +168,10 @@ public class LineSerializer extends DelimitedSerializer
 	 * @param obj the object to serialize
 	 *
 	 * @return a string representation of the object
+	 *
+	 * @throws NioInvalidDataException if the passed in data was invalid
 	 */
-	protected String serializeString(NioPacket obj)
+	protected String serializeString(NioPacket obj) throws NioInvalidDataException
 	{
 		return obj.getData().toString();
 	}

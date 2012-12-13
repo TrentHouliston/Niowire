@@ -19,6 +19,7 @@ package io.niowire.serializer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.niowire.data.NioPacket;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
 /**
@@ -43,9 +44,20 @@ public class JsonSerializer extends LineSerializer
 	 * @return a LinkedHashMap containing the mapping of the JSON Object
 	 */
 	@Override
-	protected Object deserializeString(String str)
+	protected Object deserializeString(String str) throws NioInvalidDataException
 	{
-		return g.fromJson(str, LinkedHashMap.class);
+		//Work out if we are deserializing an array or object
+		switch (str.charAt(0))
+		{
+			//For an array
+			case '[':
+				return g.fromJson(str, ArrayList.class);
+			//For an object (map)
+			case '{':
+				return g.fromJson(str, LinkedHashMap.class);
+			default:
+				throw new NioInvalidDataException();
+		}
 	}
 
 	/**

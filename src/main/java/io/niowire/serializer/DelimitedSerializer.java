@@ -24,6 +24,8 @@ import java.nio.channels.ClosedChannelException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class is the most basic serializer. It scans the input stream for a
@@ -47,6 +49,7 @@ public abstract class DelimitedSerializer implements NioSerializer
 	 * This is the static byte buffer shared between all instances of the
 	 * serializer.
 	 */
+	private static final Logger LOG = LoggerFactory.getLogger(DelimitedSerializer.class.getName());
 	private static final ByteBuffer tb = ByteBuffer.allocateDirect(32768);
 	//This buffer is allocated as needed if there is any leftover data (split packets)
 	private ByteBuffer residual = null;
@@ -127,7 +130,15 @@ public abstract class DelimitedSerializer implements NioSerializer
 					data.limit(tb.position() - delimiter.length);
 
 					//Deserialize this section
-					packets.addAll(deserializeBlob(data));
+					try
+					{
+						List<NioPacket> pkts = deserializeBlob(data);
+						packets.addAll(pkts);
+					}
+					catch (Exception ex)
+					{
+						LOG.warn("There was a packet of invalid data sent to the deserializer");
+					}
 
 					//Set our delimiter for next time we go through
 					lastDelimiter = tb.position();
@@ -183,12 +194,18 @@ public abstract class DelimitedSerializer implements NioSerializer
 		{
 			throw new ClosedChannelException();
 		}
+		try
+		{
+			//Serialize our packets into byte buffers
+			ByteBuffer buff = serializeBlob(packet);
 
-		//Serialize our packets into byte buffers
-		ByteBuffer buff = serializeBlob(packet);
-
-		//Add these buffers to the queue
-		sendQueue.add(buff);
+			//Add these buffers to the queue
+			sendQueue.add(buff);
+		}
+		catch (Exception ex)
+		{
+			LOG.warn("There was a packet of invalid data sent to the serializer");
+		}
 	}
 
 	/**
@@ -323,9 +340,9 @@ public abstract class DelimitedSerializer implements NioSerializer
 	 *
 	 * @return a list of packets which were found in that delimited blob
 	 *
-	 * @throws IOException
+	 * @throws NioInvalidDataException if the given data was invalid
 	 */
-	protected abstract List<NioPacket> deserializeBlob(ByteBuffer blob) throws IOException;
+	protected abstract List<NioPacket> deserializeBlob(ByteBuffer blob) throws NioInvalidDataException;
 
 	/**
 	 * This method is used to convert a NioPacket object into a serialized byte
@@ -337,10 +354,9 @@ public abstract class DelimitedSerializer implements NioSerializer
 	 *
 	 * @return a {@link ByteBuffer} that contains the data to be sent
 	 *
-	 * @throws IOException if there was an IOException while serializing the
-	 *                        packet
+	 * @throws NioInvalidDataException if the given data was invalid
 	 */
-	protected abstract ByteBuffer serializeBlob(NioPacket packet) throws IOException;
+	protected abstract ByteBuffer serializeBlob(NioPacket packet) throws NioInvalidDataException;
 
 	/**
 	 * This method should return the multi byte delimiter to use when delimiting
