@@ -76,7 +76,7 @@ public interface NioInspector extends NioObject, NioContextUser
 	 * @throws IOException if an IOException occurs while getting the Uid or the
 	 *                        channel is closed
 	 */
-	public String getUid() throws IOException;
+	public String getUid();
 
 	/**
 	 * This method is run on every single packet before it is used in the

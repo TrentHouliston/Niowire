@@ -28,6 +28,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for the {@link NullInspector}
+ *
  * @author Trent Houliston
  */
 public class NullInspectorTest
@@ -82,18 +83,19 @@ public class NullInspectorTest
 		//Create a new inspector
 		NullInspector inspect = new NullInspector();
 
+		//Mock a remote address in the context
+		NioConnection.Context context = mock(NioConnection.Context.class);
+		when(context.getRemoteAddress()).thenReturn(new InetSocketAddress("171.205.239.171", 52719));
+
+		//Set the context
+		inspect.setContext(context);
+
 		//Close it
 		inspect.close();
 
-		//Try getting the Uid (should throw an exception)
-		try
-		{
-			inspect.getUid();
-			fail("An exception should have been thrown");
-		}
-		catch (ClosedChannelException ex)
-		{
-		}
+		//Make sure that a UID is still available
+		assertEquals("The UID should still remain", "ABCDEFABCDEF", inspect.getUid());
+
 		//Try inspecting (should throw an exception)
 		try
 		{

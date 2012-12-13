@@ -43,12 +43,8 @@ public class NullInspector implements NioInspector
 	 * @return the UID
 	 */
 	@Override
-	public String getUid() throws IOException
+	public String getUid()
 	{
-		if (!open)
-		{
-			throw new ClosedChannelException();
-		}
 		return UidGenerator.addressToUid(context.getRemoteAddress());
 	}
 
