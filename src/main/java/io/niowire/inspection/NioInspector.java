@@ -19,6 +19,7 @@ package io.niowire.inspection;
 import io.niowire.data.NioPacket;
 import io.niowire.entities.NioObject;
 import io.niowire.server.NioContextUser;
+import java.io.IOException;
 
 /**
  * This interface is the NioInspector interface, classes which implement this
@@ -71,8 +72,11 @@ public interface NioInspector extends NioObject, NioContextUser
 	 * be unique).
 	 *
 	 * @return a unique identifier to identify this connection
+	 *
+	 * @throws IOException if an IOException occurs while getting the Uid or the
+	 *                        channel is closed
 	 */
-	public String getUid();
+	public String getUid() throws IOException;
 
 	/**
 	 * This method is run on every single packet before it is used in the
@@ -85,10 +89,11 @@ public interface NioInspector extends NioObject, NioContextUser
 	 * @return a packet to give to the services, or null if this packet should
 	 *            be filtered
 	 *
+	 * @throws IOException If the channel is closed
 	 * @throws NioAuthenticationException if this packet made the connection
 	 *                                       fail authentication
 	 */
-	public NioPacket inspect(NioPacket packet) throws NioAuthenticationException;
+	public NioPacket inspect(NioPacket packet) throws IOException, NioAuthenticationException;
 
 	/**
 	 * The timeout method should return true when this connection should time

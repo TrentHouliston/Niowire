@@ -19,6 +19,7 @@ package io.niowire.inspection;
 import io.niowire.data.NioPacket;
 import io.niowire.server.NioConnection.Context;
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.util.Map;
 
 /**
@@ -33,6 +34,7 @@ public class NullInspector implements NioInspector
 
 	//Our context
 	private Context context = null;
+	private boolean open = true;
 
 	/**
 	 * We use the UID generator to generate our UID based on the remoteAddress
@@ -41,8 +43,12 @@ public class NullInspector implements NioInspector
 	 * @return the UID
 	 */
 	@Override
-	public String getUid()
+	public String getUid() throws IOException
 	{
+		if (!open)
+		{
+			throw new ClosedChannelException();
+		}
 		return UidGenerator.addressToUid(context.getRemoteAddress());
 	}
 
@@ -56,8 +62,12 @@ public class NullInspector implements NioInspector
 	 * @throws NioAuthenticationException does not get thrown ever in this class
 	 */
 	@Override
-	public NioPacket inspect(NioPacket line) throws NioAuthenticationException
+	public NioPacket inspect(NioPacket line) throws NioAuthenticationException, IOException
 	{
+		if (!open)
+		{
+			throw new ClosedChannelException();
+		}
 		return line;
 	}
 
@@ -69,8 +79,8 @@ public class NullInspector implements NioInspector
 	@Override
 	public boolean timeout()
 	{
-		//We never time out
-		return false;
+		//Timeout when the inspector is closed
+		return !open;
 	}
 
 	/**
@@ -97,6 +107,6 @@ public class NullInspector implements NioInspector
 	@Override
 	public void close() throws IOException
 	{
-		//Do nothing
+		open = false;
 	}
 }
