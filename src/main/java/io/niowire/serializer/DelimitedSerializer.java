@@ -135,7 +135,7 @@ public abstract class DelimitedSerializer implements NioSerializer
 						List<NioPacket> pkts = deserializeBlob(data);
 						packets.addAll(pkts);
 					}
-					catch (Exception ex)
+					catch (NioInvalidDataException ex)
 					{
 						LOG.warn("There was a packet of invalid data sent to the deserializer");
 					}
@@ -202,7 +202,7 @@ public abstract class DelimitedSerializer implements NioSerializer
 			//Add these buffers to the queue
 			sendQueue.add(buff);
 		}
-		catch (Exception ex)
+		catch (NioInvalidDataException ex)
 		{
 			LOG.warn("There was a packet of invalid data sent to the serializer");
 		}

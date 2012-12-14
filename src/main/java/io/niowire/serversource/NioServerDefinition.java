@@ -38,7 +38,8 @@ public class NioServerDefinition
 	//Our variables
 	private String id;
 	private String name;
-	private int port;
+	//Box the port so it can be null (grab any free port)
+	private Integer port;
 	private NioObjectFactory<NioSerializer> serializerFactory;
 	private NioObjectFactory<NioInspector> inspectorFactory;
 	private List<NioObjectFactory<NioService>> serviceFactories;
@@ -88,7 +89,7 @@ public class NioServerDefinition
 	 *
 	 * @return the port
 	 */
-	public int getPort()
+	public Integer getPort()
 	{
 		return port;
 	}
@@ -98,7 +99,7 @@ public class NioServerDefinition
 	 *
 	 * @param port the port to set
 	 */
-	public void setPort(int port)
+	public void setPort(Integer port)
 	{
 		this.port = port;
 	}

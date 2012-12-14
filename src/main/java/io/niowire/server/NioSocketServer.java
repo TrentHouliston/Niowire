@@ -313,7 +313,17 @@ public class NioSocketServer implements Runnable
 	{
 		ServerSocketChannel serv = ServerSocketChannel.open();
 		serv.configureBlocking(false);
-		serv.bind(new InetSocketAddress(server.getPort()));
+
+		if (server.getPort() != null)
+		{
+			serv.bind(new InetSocketAddress(server.getPort()));
+		}
+		else
+		{
+			serv.bind(null);
+			server.setPort(serv.socket().getLocalPort());
+		}
+
 		SelectionKey key = serv.register(channels, SelectionKey.OP_ACCEPT);
 		key.attach(server);
 
