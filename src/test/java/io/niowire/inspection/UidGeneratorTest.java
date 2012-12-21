@@ -16,6 +16,7 @@
  */
 package io.niowire.inspection;
 
+import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import org.junit.Test;
@@ -57,5 +58,14 @@ public class UidGeneratorTest
 		sAddr = new InetSocketAddress(inet, 51966);
 		uid = UidGenerator.addressToUid(sAddr);
 		assertEquals("DEADBEEFCAFEDEADBEEFCAFEDEADBEEFCAFE", uid);
+
+		//Test other methods of UID generation
+		uid = UidGenerator.addressToUid("171.205.239.171", 52719);
+		assertEquals("ABCDEFABCDEF", uid);
+
+		//Do some magic to get the constructor to run (for 100% code coverage)
+		Constructor<UidGenerator> constructor = UidGenerator.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+		constructor.newInstance();
 	}
 }

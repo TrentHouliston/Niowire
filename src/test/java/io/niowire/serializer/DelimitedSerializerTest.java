@@ -453,6 +453,29 @@ public class DelimitedSerializerTest
 	}
 
 	/**
+	 * Tests that when an exception is thrown while serializing, that it is
+	 * ignored and not serialized.
+	 */
+	@Test
+	public void testExceptionThrownOnSerialize() throws Exception
+	{
+		//Create a serializer
+		DelimitedSerializer serializer = new DelimitedSerializerImpl();
+
+		//Check that we do not currently have data
+		assertFalse("The serializer should not have data at this point", serializer.hasData());
+
+		//Mock a NioPacket which will throw an exception for us
+		NioPacket packet = new NioPacket("TEST", null);
+
+		//Serialize the packet (should have internally thrown an exception)
+		serializer.serialize(packet);
+
+		//We should have hasData be true
+		assertFalse("The serializer should not have data", serializer.hasData());
+	}
+
+	/**
 	 * Tests that when the serializer is closed, the methods throw exceptions
 	 *
 	 * @throws Exception
@@ -581,6 +604,11 @@ public class DelimitedSerializerTest
 		@Override
 		public ByteBuffer serializeBlob(NioPacket packet) throws NioInvalidDataException
 		{
+			//If our data is null then throw an exception (for testing)
+			if (packet.getData() == null)
+			{
+				throw new NioInvalidDataException();
+			}
 			byte[] data = (byte[]) packet.getData();
 			return ByteBuffer.wrap(data);
 		}
