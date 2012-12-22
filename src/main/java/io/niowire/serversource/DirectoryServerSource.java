@@ -16,12 +16,13 @@
  */
 package io.niowire.serversource;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.*;
+import io.niowire.entities.NioObjectFactory;
+import io.niowire.entities.ReflectiveNioObjectFactory;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,9 +50,19 @@ public class DirectoryServerSource implements NioServerSource
 	 */
 	private File dir;
 	/**
-	 * A GSON instance to parse the json files
+	 * A GSON instance to parse the json files. has a type adapter that uses the
+	 * {@link ReflectiveNioObjectFactory} as the concrete type of the
+	 * {@Link NioObjectFactory}
 	 */
-	private static Gson gson = new GsonBuilder().serializeNulls().create();
+	private static Gson gson = new GsonBuilder().serializeNulls().registerTypeAdapter(NioObjectFactory.class, new JsonDeserializer<Object>()
+	{
+		@Override
+		public Object deserialize(JsonElement je, Type type, JsonDeserializationContext jdc) throws JsonParseException
+		{
+			//Use the ReflectiveNioObjectFactory instead
+			return gson.fromJson(je, ReflectiveNioObjectFactory.class);
+		}
+	}).create();
 	/**
 	 * Our current state
 	 */
