@@ -17,6 +17,7 @@
 package io.niowire.serversource;
 
 import io.niowire.entities.NioObjectFactory;
+import io.niowire.entities.ReflectiveNioObjectFactory;
 import io.niowire.inspection.NioInspector;
 import io.niowire.serializer.NioSerializer;
 import io.niowire.server.NioPropertyUnchangableException;
@@ -178,13 +179,15 @@ public class NioServerDefinition
 	 */
 	public void update(NioServerDefinition server) throws NioPropertyUnchangableException
 	{
-		this.setId(server.getId());
+		//We don't update the IDs
+		//this.setId(server.getId());
 		this.setName(server.getName());
 		this.setSerializerFactory(server.getSerializerFactory());
 		this.setInspectorFactory(server.getInspectorFactory());
 		this.setServiceFactories(server.getServiceFactories());
 
-		if (this.getPort() != server.getPort())
+		if (this.getPort() == null && server.getPort() != null
+			|| !this.getPort().equals(server.getPort()))
 		{
 			throw new NioPropertyUnchangableException();
 		}

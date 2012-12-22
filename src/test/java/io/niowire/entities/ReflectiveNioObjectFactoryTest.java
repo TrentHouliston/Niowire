@@ -27,7 +27,7 @@ import static org.junit.Assert.*;
  *
  * @author trent
  */
-public class NioObjectFactoryTest
+public class ReflectiveNioObjectFactoryTest
 {
 
 	/**
@@ -40,7 +40,7 @@ public class NioObjectFactoryTest
 	public void testObjectCreation() throws Exception
 	{
 		//Build a new factory
-		NioObjectFactory<NioObjectImpl> factory = new NioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.EMPTY_MAP);
+		ReflectiveNioObjectFactory<NioObjectImpl> factory = new ReflectiveNioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.EMPTY_MAP);
 
 		//Try to create an object
 		NioObjectImpl obj = factory.create();
@@ -61,7 +61,7 @@ public class NioObjectFactoryTest
 		try
 		{
 			//Make a new object
-			NioObjectFactory<NioObjectImpl> factory = new NioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.singletonMap("exception", new Object()));
+			ReflectiveNioObjectFactory<NioObjectImpl> factory = new ReflectiveNioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.singletonMap("exception", new Object()));
 
 			//Try to make a new object (should fail since the map contains something)
 			//This was set up in the Impl class
@@ -85,7 +85,7 @@ public class NioObjectFactoryTest
 		try
 		{
 			//Make a new object
-			NioObjectFactory<NioObject> factory = new NioObjectFactory<NioObject>("java.lang.String", Collections.singletonMap("foo", new Object()));
+			ReflectiveNioObjectFactory<NioObject> factory = new ReflectiveNioObjectFactory<NioObject>("java.lang.String", Collections.singletonMap("foo", new Object()));
 			factory.create();
 			fail("An exception should have been thrown as String is not a NioObject");
 		}
@@ -106,7 +106,7 @@ public class NioObjectFactoryTest
 		try
 		{
 			//Make a new object
-			NioObjectFactory<NioObject> factory = new NioObjectFactory<NioObject>(NioObjectImpl.class.getName(), Collections.singletonMap("runtime", new Object()));
+			ReflectiveNioObjectFactory<NioObject> factory = new ReflectiveNioObjectFactory<NioObject>(NioObjectImpl.class.getName(), Collections.singletonMap("runtime", new Object()));
 			factory.create();
 			fail("An exception should have been thrown here (a wrapped runtime exception)");
 		}
