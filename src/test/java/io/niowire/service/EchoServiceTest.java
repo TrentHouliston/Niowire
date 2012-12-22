@@ -18,6 +18,8 @@ package io.niowire.service;
 
 import io.niowire.data.NioPacket;
 import io.niowire.server.NioConnection;
+import io.niowire.server.NioConnection.Context;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import org.junit.Test;
@@ -63,10 +65,10 @@ public class EchoServiceTest
 		when(context.getUid()).thenReturn("TEST");
 
 		//Mock our write method so that the objects are put into the hash set
-		doAnswer(new Answer()
+		doAnswer(new Answer<String>()
 		{
 			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable
+			public String answer(InvocationOnMock invocation) throws Throwable
 			{
 				NioPacket packet = (NioPacket) invocation.getArguments()[0];
 				returned.add(packet);
@@ -88,10 +90,38 @@ public class EchoServiceTest
 			echo.send(packet);
 		}
 
-		//Remove all the returned packets from sent
-		sent.removeAll(returned);
+		//Check the two are equal
+		assertArrayEquals(sent.toArray(), returned.toArray());
+	}
 
-		//Make sure there are no packets left
-		assertTrue(sent.isEmpty());
+	/**
+	 * Tests that when an exception is thrown while writing that the packet is
+	 * dropped and the service keeps running. This test fails if there is an
+	 * exception
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testExceptionOnWrite() throws Exception
+	{
+		Context mock = mock(NioConnection.Context.class);
+		doThrow(new IOException()).when(mock).write(any(NioPacket.class));
+
+		EchoService service = new EchoService();
+
+		service.setContext(mock);
+		service.send(new NioPacket("Test", "Test"));
+	}
+
+	/**
+	 * Executes the unused methods so that they have code coverage
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testUnusedMethods() throws Exception
+	{
+		EchoService service = new EchoService();
+		service.close();
 	}
 }
