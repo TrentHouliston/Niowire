@@ -18,7 +18,7 @@ package io.niowire.serversource;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -31,7 +31,7 @@ import java.util.Map;
 public class StaticServerSource implements NioServerSource
 {
 
-	private HashMap<NioServerDefinition, Event> changes;
+	private LinkedHashMap<NioServerDefinition, Event> changes;
 	private boolean first = true;
 
 	/**
@@ -42,7 +42,7 @@ public class StaticServerSource implements NioServerSource
 	public StaticServerSource(NioServerDefinition... servers)
 	{
 		//Create a new HashMap to store our changes
-		changes = new HashMap<NioServerDefinition, Event>(servers.length);
+		changes = new LinkedHashMap<NioServerDefinition, Event>(servers.length);
 
 		//Loop through our definition
 		for (NioServerDefinition def : servers)
@@ -68,7 +68,7 @@ public class StaticServerSource implements NioServerSource
 		{
 			//Return our changes
 			first = false;
-			HashMap<NioServerDefinition, Event> temp = changes;
+			LinkedHashMap<NioServerDefinition, Event> temp = changes;
 			changes = null;
 			return temp;
 		}
