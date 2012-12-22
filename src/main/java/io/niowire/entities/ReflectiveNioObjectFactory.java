@@ -28,7 +28,7 @@ import java.util.Map;
  *
  * @author Trent Houliston
  */
-public class ReflectiveNioObjectFactory<T extends NioObject> implements NioObjectFactory
+public class ReflectiveNioObjectFactory<T extends NioObject> implements NioObjectFactory<T>
 {
 
 	private final String className;
@@ -42,7 +42,7 @@ public class ReflectiveNioObjectFactory<T extends NioObject> implements NioObjec
 	 * @param configuration the configuration map to be used when creating the
 	 *                         object
 	 */
-	public ReflectiveNioObjectFactory(String className, Map<String, Object> configuration)
+	public ReflectiveNioObjectFactory(String className, Map<String, ? extends Object> configuration)
 	{
 		//Store our class name
 		this.className = className;

@@ -56,6 +56,8 @@ public class NioSocketServer implements Runnable
 	private final NioServerSource source;
 	//The servers
 	private final HashMap<String, SelectionKey> servers = new HashMap<String, SelectionKey>(1);
+	//If we should shutdown
+	private boolean shutdownNow = false;
 
 	/**
 	 * This creates a new NioSocketServer instance which uses the passed
@@ -106,21 +108,51 @@ public class NioSocketServer implements Runnable
 				//and if any servers are to be added or removed
 				channels.select(1000);
 
+				//Check if we need to shutdown
+				if (shutdownNow)
+				{
+					//Loop through all our keys
+					for (SelectionKey key : channels.keys())
+					{
+						try
+						{
+							//if it's a connection
+							if (key.attachment() instanceof NioConnection)
+							{
+								//Close the connection
+								NioConnection con = (NioConnection) key.attachment();
+								con.close();
+							}
+							//Close and cancel the key/socket
+							key.channel().close();
+							key.cancel();
+						}
+						catch (RuntimeException ex)
+						{
+						}
+					}
+
+					//Die! (kill the thread)
+					throw new ThreadDeath();
+				}
+
 				//Iterate through all the keys
 				Iterator<SelectionKey> keys = channels.selectedKeys().iterator();
 				while (keys.hasNext())
 				{
 					SelectionKey key = keys.next();
 
+					//If the key is valid then it has closed
 					if (!key.isValid())
 					{
-						//Log that the connection has closed
-						LOG.info("Server {} has disconnected", key.attachment());
 						if (key.attachment() instanceof NioConnection)
 						{
-							//Close and cleanup
-							NioConnection con = (NioConnection) key.attachment();
-							con.close();
+							//Run the connection closed method
+							connectionClosed(key);
+						}
+						else
+						{
+							LOG.info("Server {} has stopped listening", key.attachment());
 						}
 					}
 					//If it is one of the servers getting a new connection
@@ -146,12 +178,12 @@ public class NioSocketServer implements Runnable
 							clientKey.attach(connection);
 
 							//Log that we have a new connection
-							LOG.info("Server {} has connected", client.socket().getInetAddress().getHostAddress());
+							LOG.info("Client {} has connected", client.socket().getInetAddress().getHostAddress());
 						}
 						catch (RuntimeException ex)
 						{
 							//If we have an exception then we need to kick the client
-							LOG.error("Server {} was rejected as an exception occured during its creation", client.socket().getInetAddress().getHostAddress());
+							LOG.error("Client {} was rejected as an exception occured during its creation", client.socket().getInetAddress().getHostAddress());
 
 							//Close the client and the key
 							client.close();
@@ -160,7 +192,7 @@ public class NioSocketServer implements Runnable
 						catch (Exception ex)
 						{
 							//If we have an exception then we need to kick the client
-							LOG.error("Server {} was rejected as an exception occured during its creation", client.socket().getInetAddress().getHostAddress());
+							LOG.error("Client {} was rejected as an exception occured during its creation", client.socket().getInetAddress().getHostAddress());
 
 							//Close the client and the key
 							client.close();
@@ -178,10 +210,11 @@ public class NioSocketServer implements Runnable
 						buffer.clear();
 
 						int read = chan.read(buffer);
+						//If -1 then its the end of the stream (socket closed)
 						if (read == -1)
 						{
-							//TODO this means that the connection is closed (we reached the end of the stream)
-							//(shouldnt !isvalid have been thrown? it might i'm not sure yet
+							//Run the closed connection
+							connectionClosed(key);
 						}
 						else
 						{
@@ -302,6 +335,17 @@ public class NioSocketServer implements Runnable
 	}
 
 	/**
+	 * This method is run when the server needs to be shutdown, it flags to the
+	 * server that it needs to be shut down so that on the next loop of the
+	 * system it will close down all the servers and connections it has.
+	 */
+	public void shutdown()
+	{
+		channels.wakeup();
+		this.shutdownNow = true;
+	}
+
+	/**
 	 * This method adds a new server into the Socket Server.
 	 *
 	 * @param server the server definition to add
@@ -311,22 +355,32 @@ public class NioSocketServer implements Runnable
 	 */
 	protected void addServer(NioServerDefinition server) throws IOException
 	{
+		//Open a new socket and set it to non blocking
 		ServerSocketChannel serv = ServerSocketChannel.open();
 		serv.configureBlocking(false);
 
+		//If we have a port then use it
 		if (server.getPort() != null)
 		{
+			//Bind to that port
 			serv.bind(new InetSocketAddress(server.getPort()));
 		}
 		else
 		{
+			//Otherwise bind to a null port (pick a random port)
 			serv.bind(null);
+
+			//Set the port we chose into our definition
 			server.setPort(serv.socket().getLocalPort());
 		}
 
+		//Register
 		SelectionKey key = serv.register(channels, SelectionKey.OP_ACCEPT);
+
+		//Attach to the server
 		key.attach(server);
 
+		//Put ourselves in our list of active servers
 		servers.put(server.getId(), key);
 	}
 
@@ -373,5 +427,26 @@ public class NioSocketServer implements Runnable
 			//Re Add the server
 			addServer(server);
 		}
+	}
+
+	/**
+	 * This method is run when a client disconnects from a server. It is
+	 * necessary as there are two ways that a client can disconnect (either end
+	 * of stream or by invalid key)
+	 *
+	 * @param key the key to clean up
+	 *
+	 * @throws IOException
+	 */
+	private void connectionClosed(SelectionKey key) throws IOException
+	{
+		//Log that the connection has closed
+		LOG.info("Client {} has disconnected", key.attachment());
+
+		//Clean everything up
+		NioConnection con = (NioConnection) key.attachment();
+		con.close();
+		key.channel().close();
+		key.cancel();
 	}
 }

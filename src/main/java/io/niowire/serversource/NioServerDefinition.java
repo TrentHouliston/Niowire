@@ -161,7 +161,7 @@ public class NioServerDefinition
 	 *
 	 * @param serviceFactories the serviceFactories to set
 	 */
-	public void setServiceFactories(List<NioObjectFactory<NioService>> serviceFactories)
+	public void setServiceFactories(List<? extends NioObjectFactory<NioService>> serviceFactories)
 	{
 		//Wrap it so that nobody else has access to our shared state
 		this.serviceFactories = new LinkedList<NioObjectFactory<NioService>>(serviceFactories);

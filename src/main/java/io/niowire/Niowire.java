@@ -30,13 +30,15 @@ import io.niowire.serversource.NioServerSource;
  * @author Trent Houliston
  * @version 1.0.0
  */
-public class Niowire extends Thread
+public class Niowire
 {
 
 	/**
 	 * The thread group for Niowire
 	 */
 	public static final ThreadGroup THREAD_GROUP = new ThreadGroup("Niowire");
+	private final NioSocketServer server;
+	private final Thread thread;
 
 	/**
 	 * Creates a new Niowire thread object to be run using the passed
@@ -49,6 +51,23 @@ public class Niowire extends Thread
 	 */
 	public Niowire(NioServerSource source) throws NiowireException
 	{
-		super(THREAD_GROUP, new NioSocketServer(source), "Niowire");
+		this.server = new NioSocketServer(source);
+		this.thread = new Thread(THREAD_GROUP, server, "Niowire");
+	}
+
+	/**
+	 * Starts up the thread for this Niowire server
+	 */
+	public void start()
+	{
+		this.thread.start();
+	}
+
+	/**
+	 * Shuts down the Niowire server
+	 */
+	public void shutdown()
+	{
+		this.server.shutdown();
 	}
 }
