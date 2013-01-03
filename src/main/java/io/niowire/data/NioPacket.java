@@ -37,7 +37,7 @@ public class NioPacket implements Comparable<NioPacket>
 	/**
 	 * The data contained in this packet
 	 */
-	private Object data;
+	private final Object data;
 
 	/**
 	 * Construct a new NioPacket containing this data from the source (the UID
@@ -71,16 +71,6 @@ public class NioPacket implements Comparable<NioPacket>
 	public Object getData()
 	{
 		return data;
-	}
-
-	/**
-	 * Sets the data object which is contained in this packet
-	 *
-	 * @param data the data to set
-	 */
-	public void setData(Object data)
-	{
-		this.data = data;
 	}
 
 	/**

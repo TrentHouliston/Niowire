@@ -47,41 +47,69 @@ public class NioPacketTest
 		assertEquals("The source should be the entered source", packet.getSource(), SOURCE);
 		assertEquals("The data should be the entered data", packet.getData(), DATA);
 
-		//Change the data
-		packet.setData("Data2");
-
-		//Check that the data was updated
-		assertEquals("The data should be the entered data", packet.getData(), "Data2");
-
 		//Check that the timestamp is within 1 millisecond
 		assertTrue("The timestamps were wrong (or too far off)", (creationTime - packet.getTimestamp()) <= 1);
 	}
 
 	/**
 	 * Tests the equals method compares objects correctly
+	 *
+	 * @throws Exception
 	 */
 	@Test
-	public void testEquals()
+	public void testEquals() throws Exception
 	{
 		//Create three packets
 		NioPacket a = new NioPacket("x", "y");
 		NioPacket b = new NioPacket("y", "z");
 		NioPacket c = new NioPacket("x", "y");
+		NioPacket d = new NioPacket("x", "z");
+
+		//Since we can't ensure that each of the packets has the same creation time, set it manually
+		Field timestamp = NioPacket.class.getDeclaredField("timestamp");
+		timestamp.setAccessible(true);
+
+		//Set our timestamps
+		timestamp.set(a, 1000);
+		timestamp.set(b, 1000);
+		timestamp.set(c, 1000);
+		timestamp.set(d, 1000);
 
 		//Check the first packet
 		assertFalse("These packets should not be equal", a.equals(b));
 		assertTrue("These packets should be equal", a.equals(c));
+		assertFalse("These packets should not be equal", a.equals(d));
 
 		//Check the second packet
 		assertFalse("These packets should not be equal", b.equals(a));
 		assertFalse("These packets should not be equal", b.equals(c));
+		assertFalse("These packets should not be equal", b.equals(d));
 
 		//Check the third packet
 		assertTrue("These packets should be equal", c.equals(a));
 		assertFalse("These packets should not be equal", c.equals(b));
+		assertFalse("These packets should not be equal", c.equals(d));
+
+		//Check the fourth packet
+		assertFalse("These packets should not be equal", d.equals(a));
+		assertFalse("These packets should not be equal", d.equals(b));
+		assertFalse("These packets should not be equal", d.equals(c));
 
 		//Check that comparing to a random object fails
 		assertFalse("These packets should not be equal and should not throw an exception", a.equals(new Object()));
+
+		//Check that comparing to null returns false
+		assertFalse("A packet should never equal null", a.equals(null));
+
+		//Special check for checking that different timestamps makes packets not equal
+		NioPacket t1 = new NioPacket(SOURCE, DATA);
+		NioPacket t2 = new NioPacket(SOURCE, DATA);
+
+		timestamp.set(t1, 1000);
+		timestamp.set(t2, 2000);
+
+		//Check the timestamps invalidate equals
+		assertFalse("The timestamp must be equal for packets to be equal", t1.equals(t2));
 	}
 
 	/**

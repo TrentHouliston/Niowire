@@ -34,6 +34,7 @@ import java.util.Scanner;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 /**
@@ -60,38 +61,53 @@ public class NiowireTest
 
 		//Set a null port so we find a random free one (it will then be set into this)
 		def.setPort(null);
+
+		//Create our inspector (NullInspector), Serializer (JsonSerializer) and service (EchoService)
 		ReflectiveNioObjectFactory<NioInspector> inspect = new ReflectiveNioObjectFactory<NioInspector>(NullInspector.class.getName(), Collections.<String, Object>emptyMap());
 		ReflectiveNioObjectFactory<NioSerializer> serialize = new ReflectiveNioObjectFactory<NioSerializer>(JsonSerializer.class.getName(), Collections.singletonMap("charset", "utf-8"));
 		ReflectiveNioObjectFactory<NioService> service = new ReflectiveNioObjectFactory<NioService>(EchoService.class.getName(), Collections.<String, Object>emptyMap());
 
+		//Set these into the definition
 		def.setInspectorFactory(inspect);
 		def.setSerializerFactory(serialize);
 		def.setServiceFactories(Collections.singletonList(service));
 
+		//Create a static server source from this definition
 		StaticServerSource source = new StaticServerSource(def);
 
+		//Start up our Niowire
 		niowire = new Niowire(source);
 
+		//Start the thread
 		niowire.start();
+
+		//Wait for the server to set itself up (until it has a port)
+		while (def.getPort() == null)
+		{
+			Thread.sleep(10);
+		}
 	}
 
+	/**
+	 * This method shuts down the Niowire server when the test is over
+	 */
 	@After
 	public void teardown()
 	{
 		niowire.shutdown();
 	}
 
-	@Test
+	/**
+	 * This test tests the basic operation of the server. It makes a connection
+	 * sends data and then expects it to be returned within 0.1 seconds
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 100)
 	public void testServerOperations() throws Exception
 	{
 		//Create a gson for communication
 		Gson g = new Gson();
-
-		//Wait for the server to set itself up
-		while (def.getPort() == null)
-		{
-			Thread.sleep(10);
-		}
 
 		//Get the port now that it's a real port
 		int port = def.getPort();
@@ -109,14 +125,18 @@ public class NiowireTest
 			"Hello", "World", "How", "Are", "You"
 		};
 
+		//Write and flush the data
 		out.write(g.toJson(data) + "\n");
 		out.flush();
 
+		//Wait for the next line in response
 		String line = in.nextLine();
 		String[] back = g.fromJson(line, String[].class);
 
+		//Check the two arrays are equal
 		assertArrayEquals("The send and recieved arrays were not correct", data, back);
 
+		//Close our streams/sockets
 		out.close();
 		in.close();
 		s.close();
