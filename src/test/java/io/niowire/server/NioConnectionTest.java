@@ -20,14 +20,12 @@ import io.niowire.data.NioPacket;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.inspection.NioInspector;
 import io.niowire.serializer.NioSerializer;
+import io.niowire.server.NioConnection.Context;
 import io.niowire.serversource.NioServerDefinition;
 import io.niowire.service.NioService;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
+import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.Collections;
 import java.util.Iterator;
@@ -51,6 +49,10 @@ public class NioConnectionTest
 
 	private static final NioPacket BASE_PACKET = new NioPacket("TEST", "DATA");
 	private static final NioPacket MOD_PACKET = new NioPacket("MOD", "MOD_DATA");
+	private static final String SERVER_ID = "SERVER_ID";
+	private static final String SERVER_NAME = "SERVER_NAME";
+	private static final int SERVER_PORT = 12321;
+	private static final String UID = "UID";
 	private LinkedList<Event> events = new LinkedList<Event>();
 	private NioConnection connection = null;
 	private boolean hasData = false;
@@ -82,7 +84,7 @@ public class NioConnectionTest
 				return (SelectionKey) invocation.getMock();
 			}
 		});
-		when(key.channel()).thenReturn(new FakeSelectableChannel());
+		when(key.channel()).thenReturn(SocketChannel.open());
 
 		//Mock our serializer
 		NioSerializer serialize = mock(NioSerializer.class);
@@ -98,6 +100,17 @@ public class NioConnectionTest
 				return Collections.singletonList(BASE_PACKET);
 			}
 		});
+		doAnswer(new Answer<Object>()
+		{
+			@Override
+			public Object answer(InvocationOnMock invocation) throws Throwable
+			{
+				//Add an event to the queue
+				events.add(new Event("serialize", invocation.getArguments()[0]));
+
+				return null;
+			}
+		}).when(serialize).serialize(any(NioPacket.class));
 		when(serialize.hasData()).then(new Answer<Boolean>()
 		{
 			@Override
@@ -170,6 +183,7 @@ public class NioConnectionTest
 				return null;
 			}
 		}).when(inspect).close();
+		when(inspect.getUid()).thenReturn(UID);
 
 		//Mock our service
 		NioService service = mock(NioService.class);
@@ -208,9 +222,9 @@ public class NioConnectionTest
 
 		//Create our server definition with all of the passed values
 		NioServerDefinition def = new NioServerDefinition();
-		def.setId("Test");
-		def.setName("Test");
-		def.setPort(Integer.SIZE);
+		def.setId(SERVER_ID);
+		def.setName(SERVER_NAME);
+		def.setPort(SERVER_PORT);
 		def.setInspectorFactory(inspectFactory);
 		def.setSerializerFactory(serializeFactory);
 		def.setServiceFactories(Collections.singletonList(serviceFactory));
@@ -230,7 +244,7 @@ public class NioConnectionTest
 
 		//Set hasData to false and update the Interest Ops
 		hasData = false;
-		connection.getContext().refreshInterestOps();
+		connection.updateInterestOps();
 
 		//Check our events
 		it = events.iterator();
@@ -246,7 +260,7 @@ public class NioConnectionTest
 
 		//Set hasData to true and update the interest ops
 		hasData = true;
-		connection.getContext().refreshInterestOps();
+		connection.updateInterestOps();
 
 		//Check our events
 		it = events.iterator();
@@ -262,7 +276,7 @@ public class NioConnectionTest
 
 		//Set hasData to false again and update the Interest Ops
 		hasData = false;
-		connection.getContext().refreshInterestOps();
+		connection.updateInterestOps();
 
 		//Check our events
 		it = events.iterator();
@@ -489,13 +503,8 @@ public class NioConnectionTest
 		Event data;
 		Iterator<Event> it;
 
+		//Get an iterator
 		it = events.iterator();
-
-		//Check that the channel was closed
-		data = it.next();
-		assertEquals("The channel should have closed", "channel", data.source);
-		assertEquals("The channel should have closed", "close", data.data);
-		it.remove();
 
 		//Check that the serializer was closed
 		data = it.next();
@@ -546,104 +555,77 @@ public class NioConnectionTest
 		{
 			assertNotNull(ex);
 		}
+		try
+		{
+			connection.updateInterestOps();
+			fail("A ClosedChannelException should have been thrown");
+		}
+		catch (ClosedChannelException ex)
+		{
+			assertNotNull(ex);
+		}
 
 		//That should have been all the events
 		assertFalse("There should be no more events", it.hasNext());
 	}
 
 	/**
-	 * This is a fake SelectableChannel class to return as Mockito seems unable
-	 * to mock one.
+	 * Tests the Context object within the connection
+	 *
+	 * @throws Exception
 	 */
-	private class FakeSelectableChannel extends SelectableChannel
+	@Test
+	public void testContext() throws Exception
 	{
+		//Declare some variables
+		Event data;
+		Iterator<Event> it;
 
-		/**
-		 * Fake method does nothing
-		 */
-		@Override
-		public SelectorProvider provider()
-		{
-			return null;
-		}
+		//Get our context
+		Context context = connection.getContext();
 
-		/**
-		 * Fake method does nothing
-		 */
-		@Override
-		public int validOps()
-		{
-			return 0;
-		}
+		//Test the UID
+		assertEquals("The UID was not correct", UID, context.getUid());
 
-		/**
-		 * Fake method does nothing
-		 */
-		@Override
-		public boolean isRegistered()
-		{
-			return false;
-		}
+		//Test the server id
+		assertEquals("The Server ID was not correct", SERVER_ID, context.getServerId());
 
-		/**
-		 * Fake method does nothing
-		 *
-		 * @param sel selector
-		 */
-		@Override
-		public SelectionKey keyFor(Selector sel)
-		{
-			return null;
-		}
+		//Test the server name
+		assertEquals("The Server name was not correct", SERVER_NAME, context.getServerName());
 
-		/**
-		 * Fake method does nothing
-		 */
-		@Override
-		public SelectionKey register(Selector sel, int ops, Object att) throws ClosedChannelException
-		{
-			return null;
-		}
+		//Test the Server Port
+		assertEquals("The Server name was not correct", SERVER_PORT, context.getServerPort());
 
-		/**
-		 * Fake method does nothing
-		 *
-		 * @throws IOException
-		 */
-		@Override
-		public SelectableChannel configureBlocking(boolean block) throws IOException
-		{
-			return null;
-		}
+		//Run refreshInterestOps
+		context.refreshInterestOps();
 
-		/**
-		 * Fake method does nothing
-		 */
-		@Override
-		public boolean isBlocking()
-		{
-			return false;
-		}
+		//Write a packet
+		context.write(BASE_PACKET);
 
-		/**
-		 * Fake method does nothing
-		 */
-		@Override
-		public Object blockingLock()
-		{
-			return false;
-		}
+		//Loop through our events
+		it = events.iterator();
 
-		/**
-		 * Outputs to the events that the channel has been requested to close
-		 *
-		 * @throws IOException
-		 */
-		@Override
-		protected void implCloseChannel() throws IOException
-		{
-			events.add(new Event("channel", "close"));
-		}
+
+		//Check that the key reported that the passed value is OP_READ (since the has data method is fixed)
+		data = it.next();
+		assertEquals("The event should have been from the key", "key", data.source);
+		assertEquals("The interest ops should have been read only", SelectionKey.OP_READ, data.data);
+		it.remove();
+
+		//Check that the key reported that a write method had occured
+		data = it.next();
+		assertEquals("The event should have been from the serializer", "serialize", data.source);
+		assertEquals("The data should have been the base packet", BASE_PACKET, data.data);
+		it.remove();
+
+		//Check that the key reported that the passed value is OP_READ (since the has data method is fixed)
+		data = it.next();
+		assertEquals("The event should have been from the key", "key", data.source);
+		assertEquals("The interest ops should have been read only", SelectionKey.OP_READ, data.data);
+		it.remove();
+
+		//Get the Remote Address
+		context.getRemoteAddress();
 	}
 
 	/**
