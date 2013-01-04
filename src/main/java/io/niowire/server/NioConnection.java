@@ -134,7 +134,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	/**
 	 * Updates the interest operations on the SelectionKey, it checks if the
 	 * serializer has data to write. And if it does then it updates the
-	 * selection key to listen for {@link SelectionKey.OP_WRITE} operations as
+	 * selection key to listen for Write operations as
 	 * well
 	 *
 	 * @throws IOException
@@ -196,8 +196,8 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 			{
 				try
 				{
-					//Close the channel as it failed authentication
-					SELECTION_KEY.channel().close();
+					//Close ourselves as we failed authentication
+					this.close();
 				}
 				catch (IOException ex1)
 				{

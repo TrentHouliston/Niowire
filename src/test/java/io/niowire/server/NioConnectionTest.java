@@ -18,6 +18,7 @@ package io.niowire.server;
 
 import io.niowire.data.NioPacket;
 import io.niowire.entities.NioObjectFactory;
+import io.niowire.inspection.NioAuthenticationException;
 import io.niowire.inspection.NioInspector;
 import io.niowire.serializer.NioSerializer;
 import io.niowire.server.NioConnection.Context;
@@ -49,6 +50,7 @@ public class NioConnectionTest
 
 	private static final NioPacket BASE_PACKET = new NioPacket("TEST", "DATA");
 	private static final NioPacket MOD_PACKET = new NioPacket("MOD", "MOD_DATA");
+	private static final NioPacket BAD_PACKET = new NioPacket("BAD", "FAIL_AUTH");
 	private static final String SERVER_ID = "SERVER_ID";
 	private static final String SERVER_NAME = "SERVER_NAME";
 	private static final int SERVER_PORT = 12321;
@@ -96,8 +98,16 @@ public class NioConnectionTest
 				//Add an event to the queue
 				events.add(new Event("serialize", invocation.getArguments()[0]));
 
-				//Send back a random packet
-				return Collections.singletonList(BASE_PACKET);
+				//If we get 0 bytes then return a bad packet
+				if (!((ByteBuffer) invocation.getArguments()[0]).hasRemaining())
+				{
+					return Collections.singletonList(BAD_PACKET);
+				}
+				//Otherwise just return the base packet
+				else
+				{
+					return Collections.singletonList(BASE_PACKET);
+				}
 			}
 		});
 		doAnswer(new Answer<Object>()
@@ -160,7 +170,16 @@ public class NioConnectionTest
 				//Add an event to the queue
 				events.add(new Event("inspect", invocation.getArguments()[0]));
 
-				return MOD_PACKET;
+				//If we get a bad packet then throw an auth exception
+				if (invocation.getArguments()[0] == BAD_PACKET)
+				{
+					throw new NioAuthenticationException();
+				}
+				//Otherwise return a modified packet
+				else
+				{
+					return MOD_PACKET;
+				}
 			}
 		});
 		when(inspect.timeout()).then(new Answer<Boolean>()
@@ -317,20 +336,20 @@ public class NioConnectionTest
 
 		//Check that the data first went to the serializer
 		data = it.next();
-		assertEquals("serialize", data.source);
-		assertEquals(input, data.data);
+		assertEquals("The data should have first gone to the serialiser", "serialize", data.source);
+		assertEquals("The packet should have been the input", input, data.data);
 		it.remove();
 
 		//Check that the fake packet from the serializer was then passed to the inspector
 		data = it.next();
-		assertEquals("inspect", data.source);
-		assertEquals(BASE_PACKET, data.data);
+		assertEquals("The data should have then gone to the inspector", "inspect", data.source);
+		assertEquals("The passed in data should have been the base packet", BASE_PACKET, data.data);
 		it.remove();
 
 		//Check that then the modified packet was passed to the service
 		data = it.next();
-		assertEquals("service", data.source);
-		assertEquals(MOD_PACKET, data.data);
+		assertEquals("The data should have then been passed to the services", "service", data.source);
+		assertEquals("The data passed should have been the mod packet", MOD_PACKET, data.data);
 		it.remove();
 
 		//There should be no more events
@@ -567,6 +586,41 @@ public class NioConnectionTest
 
 		//That should have been all the events
 		assertFalse("There should be no more events", it.hasNext());
+	}
+
+	/**
+	 * Tests that the connection is closed when the inspector throws an
+	 * authentication exception
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testAuthentication() throws Exception
+	{
+		//Declare some variables
+		Event data;
+		Iterator<Event> it;
+
+		//Write null (to make it do a bad auth)
+		connection.write(ByteBuffer.allocate(0));
+
+		//Get our iterator
+		it = events.iterator();
+
+		//Check that the data first went to the serializer
+		data = it.next();
+		assertEquals("The data should have first gone to the serializer", "serialize", data.source);
+		assertFalse("The packet have been the 0 byte buffer", ((ByteBuffer) data.data).hasRemaining());
+		it.remove();
+
+		//Check that the fake packet from the serializer was then passed to the inspector
+		data = it.next();
+		assertEquals("The data should have then gone to the inspector", "inspect", data.source);
+		assertEquals("The passed in data should have been the bad packet", BAD_PACKET, data.data);
+		it.remove();
+
+		//Because we had a bad packet, we should have closed the connection.
+		testClosedMethods();
 	}
 
 	/**
