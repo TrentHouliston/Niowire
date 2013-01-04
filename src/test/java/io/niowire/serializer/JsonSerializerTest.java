@@ -53,6 +53,7 @@ public class JsonSerializerTest
 
 	/**
 	 * Test serialization works as expected
+	 *
 	 * @throws Exception
 	 */
 	@Test
@@ -92,6 +93,7 @@ public class JsonSerializerTest
 
 	/**
 	 * Test serializing POJOs works as expected
+	 *
 	 * @throws Exception
 	 */
 	@Test
@@ -120,6 +122,7 @@ public class JsonSerializerTest
 
 	/**
 	 * Test Deserializing POJOs works as expected
+	 *
 	 * @throws Exception
 	 */
 	@Test
@@ -148,6 +151,7 @@ public class JsonSerializerTest
 
 	/**
 	 * Test handling of Unicode characters works as expected
+	 *
 	 * @throws Exception
 	 */
 	@Test
@@ -270,6 +274,7 @@ public class JsonSerializerTest
 	 */
 	private static class JsonSerializerPojoTest
 	{
+
 		public String dog = "woof";
 		public String cat = "meow";
 	}

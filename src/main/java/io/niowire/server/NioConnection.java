@@ -252,6 +252,11 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	 */
 	public void rebuffer(ByteBuffer buffer) throws IOException
 	{
+		//Check that we are open
+		if (!open)
+		{
+			throw new ClosedChannelException();
+		}
 		serializer.rebuffer(buffer);
 	}
 
@@ -326,6 +331,16 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	public String toString()
 	{
 		return inspect.getUid();
+	}
+
+	/**
+	 * Gets the context object for this connection
+	 *
+	 * @return the context
+	 */
+	public Context getContext()
+	{
+		return context;
 	}
 
 	/**

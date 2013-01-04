@@ -40,13 +40,18 @@ public class ReflectiveNioObjectFactoryTest
 	public void testObjectCreation() throws Exception
 	{
 		//Build a new factory
-		ReflectiveNioObjectFactory<NioObjectImpl> factory = new ReflectiveNioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.EMPTY_MAP);
+		ReflectiveNioObjectFactory<NioObjectImpl> factory = new ReflectiveNioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.<String, NioObject>emptyMap());
 
 		//Try to create an object
 		NioObjectImpl obj = factory.create();
 
-		//Check the object is of the correct type
-		assertTrue(obj instanceof NioObjectImpl);
+		//Run close
+		obj.close();
+
+		/*
+		 * If we reached here then the test passed (otherwise a
+		 * ClassCastException would have been thrown above)
+		 */
 	}
 
 	/**
@@ -72,6 +77,7 @@ public class ReflectiveNioObjectFactoryTest
 		}
 		catch (NioObjectCreationException ex)
 		{
+			assertNotNull(ex);
 		}
 	}
 

@@ -19,10 +19,9 @@ package io.niowire.serversource;
 import com.google.gson.*;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.entities.ReflectiveNioObjectFactory;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Type;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -114,11 +113,11 @@ public class DirectoryServerSource implements NioServerSource
 			if (!servers.containsKey(file))
 			{
 				//Try to parse the message into an object
-				FileReader fr = null;
+				InputStreamReader fr = null;
 				try
 				{
 					//Read the file and make a server definition from it using the platforms default encoding
-					fr = new FileReader(file);
+					fr = new InputStreamReader(new FileInputStream(file), Charset.defaultCharset());
 					NioServerDefinition srv = gson.fromJson(fr, NioServerDefinition.class);
 					srv.setId(file.getName());
 
@@ -148,11 +147,11 @@ public class DirectoryServerSource implements NioServerSource
 			else if (servers.get(file) != file.lastModified())
 			{
 				//Try to build a server defintion
-				FileReader fr = null;
+				InputStreamReader fr = null;
 				try
 				{
 					//Read the file and make a server definition from it
-					fr = new FileReader(file);
+					fr = new InputStreamReader(new FileInputStream(file), Charset.defaultCharset());
 					NioServerDefinition srv = gson.fromJson(fr, NioServerDefinition.class);
 					srv.setId(file.getName());
 

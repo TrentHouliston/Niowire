@@ -17,7 +17,6 @@
 package io.niowire.serversource;
 
 import io.niowire.entities.NioObjectFactory;
-import io.niowire.entities.ReflectiveNioObjectFactory;
 import io.niowire.inspection.NioInspector;
 import io.niowire.serializer.NioSerializer;
 import io.niowire.server.NioPropertyUnchangableException;

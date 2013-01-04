@@ -17,7 +17,6 @@
 package io.niowire.serializer;
 
 import io.niowire.data.NioPacket;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;

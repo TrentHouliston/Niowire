@@ -54,7 +54,7 @@ public class EchoServiceTest
 
 		//Create and configure a new echo service
 		EchoService echo = new EchoService();
-		echo.configure(Collections.EMPTY_MAP);
+		echo.configure(Collections.<String, Object>emptyMap());
 
 		//Build some hash sets to store our result
 		final HashSet<NioPacket> sent = new HashSet<NioPacket>();
