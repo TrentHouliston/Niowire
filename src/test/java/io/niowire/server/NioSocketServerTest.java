@@ -62,7 +62,7 @@ public class NioSocketServerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test(timeout = 1000)
+	@Test(timeout = 5000)
 	public void testReadWriteClientClose() throws Exception
 	{
 		//<editor-fold defaultstate="collapsed" desc="Setup Server and Mocking">
@@ -187,7 +187,7 @@ public class NioSocketServerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test(timeout = 1000)
+	@Test(timeout = 5000)
 	public void testModifyingServers() throws Exception
 	{
 		//<editor-fold defaultstate="collapsed" desc="Setup Server and Mocking">
