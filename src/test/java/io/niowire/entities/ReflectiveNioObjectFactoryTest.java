@@ -84,9 +84,11 @@ public class ReflectiveNioObjectFactoryTest
 	/**
 	 * Test that if we try to construct something that's not a NioObject it will
 	 * fail
+	 *
+	 * @throws Exception
 	 */
 	@Test
-	public void testNonNioObjectCreation()
+	public void testNonNioObjectCreation() throws Exception
 	{
 		try
 		{
@@ -105,9 +107,11 @@ public class ReflectiveNioObjectFactoryTest
 	/**
 	 * Test that runtime exceptions are wrapped when they are thrown into
 	 * checked exceptions of type {@link NioObjectCreationException}
+	 *
+	 * @throws Exception
 	 */
 	@Test
-	public void testRuntimeExceptionsAreWrapped()
+	public void testRuntimeExceptionsAreWrapped() throws Exception
 	{
 		try
 		{
@@ -124,10 +128,65 @@ public class ReflectiveNioObjectFactoryTest
 	}
 
 	/**
+	 * Tests the isInstance method (checks that objects created by this (or that
+	 * could be created by this) return true, and other objects return false
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testIsInstance() throws Exception
+	{
+		//Build a new factory
+		ReflectiveNioObjectFactory<NioObjectImpl> factory = new ReflectiveNioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.<String, NioObject>emptyMap());
+
+		//Create an object
+		NioObject obj1 = factory.create();
+
+		//Create an object manually
+		NioObject obj2 = new NioObjectImpl();
+		obj2.configure(Collections.<String, Object>emptyMap());
+
+		//Create a null object
+		NioObject obj3 = null;
+
+		//Create a random object
+		NioObject obj4 = new NioObject()
+		{
+			private Map<String, Object> configuration;
+
+			@Override
+			public void configure(Map<String, Object> configuration) throws Exception
+			{
+				this.configuration = configuration;
+			}
+
+			@Override
+			public Map<String, Object> getConfiguration()
+			{
+				return configuration;
+			}
+
+			@Override
+			public void close() throws IOException
+			{
+			}
+		};
+		obj4.configure(Collections.<String, Object>emptyMap());
+
+		//Check that all of our objects behave as expected
+		assertTrue(factory.isInstance(obj1));
+		assertTrue(factory.isInstance(obj2));
+		assertFalse(factory.isInstance(obj3));
+		assertFalse(factory.isInstance(obj4));
+	}
+
+	/**
 	 * This class is a class which is used to make a basic NioObject to use
 	 */
 	public static class NioObjectImpl implements NioObject
 	{
+
+		private Map<String, Object> configuration;
 
 		/**
 		 * Configure the object. If the map contains the key "exception" then it
@@ -143,6 +202,8 @@ public class ReflectiveNioObjectFactoryTest
 		@Override
 		public void configure(Map<String, Object> configuration) throws Exception
 		{
+			this.configuration = configuration;
+
 			//If they give us an exception key throw an exception
 			if (configuration.containsKey("exception"))
 			{
@@ -164,6 +225,15 @@ public class ReflectiveNioObjectFactoryTest
 		public void close() throws IOException
 		{
 			//Do nothing
+		}
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public Map<String, Object> getConfiguration()
+		{
+			return configuration;
 		}
 	}
 }

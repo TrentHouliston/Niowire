@@ -33,6 +33,7 @@ public class StaticServerSource implements NioServerSource
 
 	private LinkedHashMap<NioServerDefinition, Event> changes;
 	private boolean first = true;
+	private Map<String, Object> configuration;
 
 	/**
 	 * Constructs a StaticServerSource with one or more servers
@@ -89,7 +90,7 @@ public class StaticServerSource implements NioServerSource
 	@Override
 	public void configure(Map<String, Object> configuration) throws Exception
 	{
-		//Do nothing
+		this.configuration = configuration;
 	}
 
 	/**
@@ -101,5 +102,14 @@ public class StaticServerSource implements NioServerSource
 	public void close() throws IOException
 	{
 		changes = null;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Map<String, Object> getConfiguration()
+	{
+		return configuration;
 	}
 }

@@ -20,8 +20,8 @@ import io.niowire.entities.NioObjectCreationException;
 import io.niowire.inspection.NioAuthenticationException;
 import io.niowire.serializer.NioInvalidDataException;
 import io.niowire.server.NioConnectionException;
-import io.niowire.server.NioPropertyUnchangableException;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 /**
@@ -119,17 +119,6 @@ public class ThrowablesTest
 	public void testNioInvalidDataException() throws Exception
 	{
 		testThrowable(NioInvalidDataException.class);
-	}
-
-	/**
-	 * Tests {@link NioPropertyUnchangableException}
-	 *
-	 * @throws Exception
-	 */
-	@Test
-	public void testNioPropertyUnchangableException() throws Exception
-	{
-		testThrowable(NioPropertyUnchangableException.class);
 	}
 
 	/**

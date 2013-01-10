@@ -44,6 +44,9 @@ public class NullInspectorTest
 		NullInspector inspect = new NullInspector();
 		inspect.configure(Collections.<String, Object>emptyMap());
 
+		//Small check for the getConfiguration method
+		assertEquals("The inspector needs to return the exact object it was created with", Collections.<String, Object>emptyMap(), inspect.getConfiguration());
+
 		//Mock a remote address in the context
 		NioConnection.Context context = mock(NioConnection.Context.class);
 		when(context.getRemoteAddress()).thenReturn(new InetSocketAddress("171.205.239.171", 52719));

@@ -17,17 +17,22 @@
 package io.niowire.server;
 
 import io.niowire.NiowireException;
+import io.niowire.entities.NioObjectFactory;
+import io.niowire.inspection.NioInspector;
+import io.niowire.serializer.NioSerializer;
 import io.niowire.serversource.Event;
 import io.niowire.serversource.NioServerDefinition;
 import io.niowire.serversource.NioServerSource;
+import io.niowire.serversource.StaticServerSource;
+import io.niowire.service.NioService;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +63,20 @@ public class NioSocketServer implements Runnable
 	private final HashMap<String, SelectionKey> servers = new HashMap<String, SelectionKey>(1);
 	//If we should shutdown
 	private boolean shutdownNow = false;
+	//Our lock so that we can add/remove servers as needed
+	private final Object lock = new Object();
+
+	/**
+	 * This creates a new NioSocketServer instance which is managed manually
+	 * (servers are added/removed directly rather then via the server source)
+	 *
+	 * @throws NiowireException if there was an exception while setting up the
+	 *                             server.
+	 */
+	public NioSocketServer() throws NiowireException
+	{
+		this(null);
+	}
 
 	/**
 	 * This creates a new NioSocketServer instance which uses the passed
@@ -72,8 +91,17 @@ public class NioSocketServer implements Runnable
 	{
 		try
 		{
-			//Store our source
-			this.source = source;
+			//If we got passed null as the source that means that they are going
+			//to manage the servers manually, use a static source of nothing
+			if (source == null)
+			{
+				this.source = new StaticServerSource();
+			}
+			//Otherwise store the source they provided
+			else
+			{
+				this.source = source;
+			}
 
 			//Allocate 8k for our buffer to read from sockets
 			buffer = ByteBuffer.allocateDirect(8192);
@@ -108,197 +136,209 @@ public class NioSocketServer implements Runnable
 				//and if any servers are to be added or removed
 				channels.select(1000);
 
-				//Check if we need to shutdown
-				if (shutdownNow)
+				synchronized (lock)
 				{
-					//Loop through all our keys
-					for (SelectionKey key : channels.keys())
+					//Check if we need to shutdown
+					if (shutdownNow)
 					{
-						try
+						//Loop through all our keys
+						for (SelectionKey key : channels.keys())
 						{
-							//if it's a connection
-							if (key.attachment() instanceof NioConnection)
-							{
-								//Close the connection
-								NioConnection con = (NioConnection) key.attachment();
-								con.close();
-							}
-							//Close and cancel the key/socket
-							key.channel().close();
-							key.cancel();
-						}
-						catch (RuntimeException ex)
-						{
-						}
-					}
-
-					//Die! (kill the thread)
-					throw new ThreadDeath();
-				}
-
-				//Iterate through all the keys
-				Iterator<SelectionKey> keys = channels.selectedKeys().iterator();
-				while (keys.hasNext())
-				{
-					SelectionKey key = keys.next();
-
-					//If the key is valid then it has closed
-					if (!key.isValid())
-					{
-						if (key.attachment() instanceof NioConnection)
-						{
-							//Run the connection closed method
-							connectionClosed(key);
-						}
-						else
-						{
-							LOG.info("Server {} has stopped listening", key.attachment());
-						}
-					}
-					//If it is one of the servers getting a new connection
-					else if (key.isAcceptable())
-					{
-						//Cast to our server
-						ServerSocketChannel server = (ServerSocketChannel) key.channel();
-
-						//Get the server definition which is attached
-						NioServerDefinition serverConfig = (NioServerDefinition) key.attachment();
-
-						//Accept the new connection and set it non blocking
-						SocketChannel client = server.accept();
-						client.configureBlocking(false);
-
-						//Register it with the channel with read (we always read)
-						SelectionKey clientKey = client.register(channels, SelectionKey.OP_READ);
-
-						try
-						{
-							//Create a new connection object and attach it to the channel
-							NioConnection connection = new NioConnection(clientKey, serverConfig);
-							clientKey.attach(connection);
-
-							//Log that we have a new connection
-							LOG.info("Client {} has connected", client.socket().getInetAddress().getHostAddress());
-						}
-						catch (RuntimeException ex)
-						{
-							//If we have an exception then we need to kick the client
-							LOG.error("Client {} was rejected as an exception occured during its creation", client.socket().getInetAddress().getHostAddress());
-
-							//Close the client and the key
-							client.close();
-							clientKey.cancel();
-						}
-						catch (Exception ex)
-						{
-							//If we have an exception then we need to kick the client
-							LOG.error("Client {} was rejected as an exception occured during its creation", client.socket().getInetAddress().getHostAddress());
-
-							//Close the client and the key
-							client.close();
-							clientKey.cancel();
-						}
-					}
-					//If the channel is readable (the socket has new data)
-					else if (key.isReadable())
-					{
-						//Cast and get our attachments
-						SocketChannel chan = (SocketChannel) key.channel();
-						NioConnection connection = (NioConnection) key.attachment();
-
-						//Clear our old data
-						buffer.clear();
-
-						int read = chan.read(buffer);
-						//If -1 then its the end of the stream (socket closed)
-						if (read == -1)
-						{
-							//Run the closed connection
-							connectionClosed(key);
-						}
-						else
-						{
-							//Get the buffer ready for writing
-							buffer.flip();
-
 							try
 							{
-								//Write it to our connection
-								connection.write(buffer);
+								//if it's a connection
+								if (key.attachment() instanceof NioConnection)
+								{
+									//Close the connection
+									NioConnection con = (NioConnection) key.attachment();
+									con.close();
+								}
+								//Close the socket (graceful disconnection)
+								if (key.channel() instanceof SocketChannel)
+								{
+									((SocketChannel) key.channel()).socket().close();
+								}
+								//Close and cancel the key/socket (which cancels all keys)
+								key.channel().close();
 							}
-							catch (BufferOverflowException ex)
+							catch (RuntimeException ex)
 							{
-								//TODO handle this case
+								LOG.warn("Exception while shutting down connection {}", key.channel());
+							}
+						}
+						//Die! (kill the thread)
+						throw new ThreadDeath();
+					}
+
+					//Iterate through all the keys
+					Iterator<SelectionKey> keys = channels.selectedKeys().iterator();
+
+					while (keys.hasNext())
+					{
+						try
+						{
+							SelectionKey key = keys.next();
+
+							//If the key is valid then it has closed
+							if (!key.isValid())
+							{
+								if (key.attachment() instanceof NioConnection)
+								{
+									//Run the connection closed method
+									connectionClosed(key);
+								}
+								else
+								{
+									LOG.info("Server {} has stopped listening", key.attachment());
+								}
+							}
+							//If it is one of the servers getting a new connection
+							else if (key.isAcceptable())
+							{
+								//Cast to our server
+								ServerSocketChannel server = (ServerSocketChannel) key.channel();
+
+								//Get the server definition which is attached
+								ActiveServer serverConfig = (ActiveServer) key.attachment();
+
+								//Accept the new connection and set it non blocking
+								SocketChannel client = server.accept();
+								client.configureBlocking(false);
+
+								//Register it with the channel with read (we always read)
+								SelectionKey clientKey = client.register(channels, SelectionKey.OP_READ);
+
+								try
+								{
+									//Create a new connection object and attach it to the channel
+									NioConnection connection = new NioConnection(clientKey, serverConfig);
+									clientKey.attach(connection);
+									serverConfig.connections.add(connection);
+
+									//Log that we have a new connection
+									LOG.info("Client {} has connected", client.socket().getInetAddress().getHostAddress());
+								}
+								catch (RuntimeException ex)
+								{
+									//If we have an exception then we need to kick the client
+									LOG.error("Client {} was rejected as an exception occured during its creation", client.socket().getInetAddress().getHostAddress());
+
+									//Close the client and the key
+									client.close();
+								}
+								catch (Exception ex)
+								{
+									//If we have an exception then we need to kick the client
+									LOG.error("Client {} was rejected as an exception occured during its creation", client.socket().getInetAddress().getHostAddress());
+
+									//Close the client and the key
+									client.close();
+								}
+							}
+							//If the channel is readable (the socket has new data)
+							else if (key.isReadable())
+							{
+								//Cast and get our attachments
+								SocketChannel chan = (SocketChannel) key.channel();
+								NioConnection connection = (NioConnection) key.attachment();
+
+								//Clear our old data
+								buffer.clear();
+
+								int read = chan.read(buffer);
+								//If -1 then its the end of the stream (socket closed)
+								if (read == -1)
+								{
+									//Run the closed connection
+									connectionClosed(key);
+								}
+								else
+								{
+									//Get the buffer ready for writing
+									buffer.flip();
+
+									try
+									{
+										//Write it to our connection
+										connection.write(buffer);
+									}
+									catch (BufferOverflowException ex)
+									{
+										//TODO handle this case
+									}
+								}
+							}
+							//If the channel is writeable (we have data to send to the client)
+							else if (key.isWritable())
+							{
+								//Do our casting
+								SocketChannel chan = (SocketChannel) key.channel();
+								NioConnection connection = (NioConnection) key.attachment();
+
+								//Clear our buffer
+								buffer.clear();
+								connection.read(buffer);
+
+								//Read into our buffer
+								buffer.flip();
+
+								//Write as much data as we can to the client
+								chan.write(buffer);
+
+								//If we have data left over then send it back to be rebuffered
+								connection.rebuffer(buffer);
+							}
+						}
+						finally
+						{
+							//We are done with this key (even if there was an exception)
+							keys.remove();
+						}
+					}
+
+					//Check if enough time has passed that we should check the timeouts again
+					if (System.currentTimeMillis() - lastTimeout > 1000)
+					{
+						//Set our last timeout check
+						lastTimeout = System.currentTimeMillis();
+
+						//TODO here there can be a concurrent modification exception if the servers are modified, need to get exclusive access to the selector during this
+						//Loop through all the keys
+						for (SelectionKey key : channels.keys())
+						{
+							//Check to see if the connection has timed out (the connection will suicide if it has timed out)
+							if (key.attachment() instanceof NioConnection)
+							{
+								//Tell the connection to check it's timeout
+								NioConnection connection = (NioConnection) key.attachment();
+								connection.timeout();
 							}
 						}
 					}
-					//If the channel is writeable (we have data to send to the client)
-					else if (key.isWritable())
+
+					//Update any servers which have changed in the server source
+					for (Entry<NioServerDefinition, Event> server : source.getChanges().entrySet())
 					{
-						//Do our casting
-						SocketChannel chan = (SocketChannel) key.channel();
-						NioConnection connection = (NioConnection) key.attachment();
+						//Get our config
+						NioServerDefinition config = server.getKey();
 
-						//Clear our buffer
-						buffer.clear();
-						connection.read(buffer);
-
-						//Read into our buffer
-						buffer.flip();
-
-						//Write as much data as we can to the client
-						chan.write(buffer);
-
-						//If we have data left over then send it back to be rebuffered
-						connection.rebuffer(buffer);
-					}
-
-					//We are done with this key
-					keys.remove();
-				}
-
-				//Check if enough time has passed that we should check the timeouts again
-				if (System.currentTimeMillis() - lastTimeout > 1000)
-				{
-					//Set our last timeout check
-					lastTimeout = System.currentTimeMillis();
-
-					//Loop through all the keys
-					for (SelectionKey key : channels.keys())
-					{
-						//Check to see if the connection has timed out (the connection will suicide if it has timed out)
-						if (key.attachment() instanceof NioConnection)
+						switch (server.getValue())
 						{
-							//Tell the connection to check it's timeout
-							NioConnection connection = (NioConnection) key.attachment();
-							connection.timeout();
+							//If we are adding a server then add a server
+							case SERVER_ADD:
+								addServer(config);
+								break;
+							//If we are removing a server then remove the server
+							case SERVER_REMOVE:
+								removeServer(config);
+								break;
+							//If we are updating a server then update the server
+							case SERVER_UPDATE:
+								updateServer(config);
+								break;
 						}
 					}
 				}
-
-				//Update any servers which have changed in the server source
-				for (Entry<NioServerDefinition, Event> server : source.getChanges().entrySet())
-				{
-					//Get our config
-					NioServerDefinition config = server.getKey();
-
-					switch (server.getValue())
-					{
-						//If we are adding a server then add a server
-						case SERVER_ADD:
-							addServer(config);
-							break;
-						//If we are removing a server then remove the server
-						case SERVER_REMOVE:
-							removeServer(config);
-							break;
-						//If we are updating a server then update the server
-						case SERVER_UPDATE:
-							updateServer(config);
-							break;
-					}
-				}
-
 			}
 			catch (CancelledKeyException ex)
 			{
@@ -341,47 +381,43 @@ public class NioSocketServer implements Runnable
 	 */
 	public void shutdown()
 	{
-		channels.wakeup();
 		this.shutdownNow = true;
+		channels.wakeup();
 	}
 
 	/**
 	 * This method adds a new server into the Socket Server.
 	 *
-	 * @param server the server definition to add
+	 * @param serverDef the server definition to add
+	 *
+	 * @return the port that we bound to
 	 *
 	 * @throws IOException if there was an IOException while setting up the
 	 *                        channel
 	 */
-	protected void addServer(NioServerDefinition server) throws IOException
+	public int addServer(NioServerDefinition serverDef) throws IOException
 	{
-		//Open a new socket and set it to non blocking
-		ServerSocketChannel serv = ServerSocketChannel.open();
-		serv.configureBlocking(false);
+		//Create a server for us to use
+		ActiveServer server = new ActiveServer(serverDef);
 
-		//If we have a port then use it
-		if (server.getPort() != null)
+		//Get a new Socket Channel
+		ServerSocketChannel serv = setupServerSocketChannel(server.getPort());
+		SelectionKey key;
+
+		synchronized (lock)
 		{
-			//Bind to that port
-			serv.bind(new InetSocketAddress(server.getPort()));
+			//Wakeup the selector (so we can add the new server straight away)
+			channels.wakeup();
+
+			//Register
+			key = serv.register(channels, SelectionKey.OP_ACCEPT, server);
 		}
-		else
-		{
-			//Otherwise bind to a null port (pick a random port)
-			serv.bind(null);
-
-			//Set the port we chose into our definition
-			server.setPort(serv.socket().getLocalPort());
-		}
-
-		//Register
-		SelectionKey key = serv.register(channels, SelectionKey.OP_ACCEPT);
-
-		//Attach to the server
-		key.attach(server);
 
 		//Put ourselves in our list of active servers
 		servers.put(server.getId(), key);
+
+		//Return the port we bound to
+		return serv.socket().getLocalPort();
 	}
 
 	/**
@@ -392,40 +428,73 @@ public class NioSocketServer implements Runnable
 	 * @throws IOException if there was an IOException while setting up the
 	 *                        channel
 	 */
-	protected void removeServer(NioServerDefinition server) throws IOException
+	public void removeServer(NioServerDefinition server) throws IOException
 	{
-		servers.get(server.getId()).channel().close();
+		SelectionKey key = servers.get(server.getId());
 		servers.remove(server.getId());
+
+		//Close the channel
+		key.channel().close();
+		ActiveServer active = (ActiveServer) key.attachment();
+
+		//Close all the sockets which are connected to this server
+		for (NioConnection con : active.connections)
+		{
+			con.close();
+		}
 	}
 
 	/**
 	 * This method modifies an existing server definition in the system. If a
-	 * NioPropertyUnchangableException occurs then we need to remove and
-	 * recreate this server.
+	 * NioPortChangedException occurs then we need to remove and recreate this
+	 * server.
 	 *
 	 * @param server the server definition to add
+	 *
+	 * @return the port number that the server is running on
 	 *
 	 * @throws IOException if there was an IOException while setting up the
 	 *                        channel
 	 */
-	protected void updateServer(NioServerDefinition server) throws IOException
+	public int updateServer(NioServerDefinition server) throws IOException
 	{
 		//Get the server we are updating
 		SelectionKey key = servers.get(server.getId());
-		NioServerDefinition current = (NioServerDefinition) key.attachment();
-		try
+		ActiveServer current = (ActiveServer) key.attachment();
+		//Update the current server's details
+		if (current.update(server))
 		{
-			//Try to update the server
-			current.update(server);
-		}
-		//If we can't update it then remove and readd it
-		catch (NioPropertyUnchangableException ex)
-		{
-			//Remove the server
-			removeServer(server);
+			//If the port has been changed then update will return true
 
-			//Re Add the server
-			addServer(server);
+			//Get a connection from the new channel
+			ServerSocketChannel serv = setupServerSocketChannel(server.getPort());
+			SelectionKey newKey;
+
+			synchronized (lock)
+			{
+				//Wakeup the selector
+				channels.wakeup();
+
+				//Register the new channel
+				newKey = serv.register(channels, SelectionKey.OP_ACCEPT);
+			}
+
+			//Attach to the server
+			newKey.attach(current);
+
+			//Overwrite the key in the server
+			servers.put(server.getId(), newKey);
+
+			//Close the old channel
+			key.channel().close();
+
+			//Return the new port
+			return serv.socket().getLocalPort();
+		}
+		else
+		{
+			//Return the existing port
+			return ((ServerSocketChannel) key.channel()).socket().getLocalPort();
 		}
 	}
 
@@ -443,10 +512,182 @@ public class NioSocketServer implements Runnable
 		//Log that the connection has closed
 		LOG.info("Client {} has disconnected", key.attachment());
 
+		//TODO Remove from the ActiveServer object
+
 		//Clean everything up
 		NioConnection con = (NioConnection) key.attachment();
 		con.close();
 		key.channel().close();
-		key.cancel();
+	}
+
+	/**
+	 * Creates a ServerSocketChannel for the passed port (or a random port if
+	 * port is null)
+	 *
+	 * @param port the port to bind to
+	 *
+	 * @return the ServerSocketChannel
+	 *
+	 * @throws IOException
+	 */
+	private ServerSocketChannel setupServerSocketChannel(Integer port) throws IOException
+	{
+		//Open a new socket and set it to non blocking
+		ServerSocketChannel serv = ServerSocketChannel.open();
+		serv.configureBlocking(false);
+
+		//If we have a port that is not null or 0
+		if (port != null && port != 0)
+		{
+			//Bind to that port
+			serv.bind(new InetSocketAddress(port));
+		}
+		else
+		{
+			//Otherwise bind to a null port (pick a random port)
+			serv.bind(null);
+		}
+
+		//Return the created server
+		return serv;
+	}
+
+	/**
+	 * This class holds the active server information for the server. This is so
+	 * that changing a server definition object does not alter our active state
+	 * (as updating it could cause issues if we don't know about it)
+	 */
+	public static class ActiveServer
+	{
+
+		//Data for this server
+		private final String id;
+		private String name;
+		private Integer port;
+		private NioObjectFactory<NioSerializer> serializerFactory;
+		private NioObjectFactory<NioInspector> inspectorFactory;
+		private List<NioObjectFactory<NioService>> serviceFactories;
+		//Connections made to this server
+		private transient List<NioConnection> connections = new LinkedList<NioConnection>();
+
+		/**
+		 * Build a new active server from the passed definition
+		 *
+		 * @param def the server definition we are building ourselves off
+		 */
+		public ActiveServer(NioServerDefinition def)
+		{
+			this.id = def.getId();
+			this.name = def.getName();
+			this.port = def.getPort();
+			this.serializerFactory = def.getSerializerFactory();
+			this.inspectorFactory = def.getInspectorFactory();
+			this.serviceFactories = def.getServiceFactories();
+		}
+
+		/**
+		 * This method is used to update the server definition object with the
+		 * details from the new server object.
+		 *
+		 * @param def the new server definition to update from
+		 *
+		 * @return returns true if the port was updated (need to change our
+		 *               server)
+		 *
+		 */
+		public boolean update(NioServerDefinition def)
+		{
+			//Work out if our port needs to be updated, we update in the following cases
+			//Our port is null and theirs is not
+			//Our port is not null and theirs is not null and different to ours
+			boolean portUpdated = (this.port == null && def.getPort() != null)
+								  || (this.port != null && def.getPort() != null && this.port.equals(def.getPort()));
+
+			//Update our details
+			this.name = def.getName();
+			this.serializerFactory = def.getSerializerFactory();
+			this.inspectorFactory = def.getInspectorFactory();
+			this.serviceFactories = def.getServiceFactories();
+			this.port = def.getPort();
+
+			//Loop through our connections and tell them to update themselves
+			for (NioConnection con : connections)
+			{
+				con.updateServerDefinition();
+			}
+
+			return portUpdated;
+		}
+
+		/**
+		 * This is a private setter for the port, as if we are passed a null
+		 * port, the port will need to be set later once the connection is made.
+		 *
+		 * @param port the port to be set
+		 */
+		private void setPort(int port)
+		{
+			this.port = port;
+		}
+
+		/**
+		 * Gets the ID of this active server
+		 *
+		 * @return the id
+		 */
+		public String getId()
+		{
+			return id;
+		}
+
+		/**
+		 * Gets the name of this active server
+		 *
+		 * @return the name
+		 */
+		public String getName()
+		{
+			return name;
+		}
+
+		/**
+		 * Gets the port of this active server
+		 *
+		 * @return the port
+		 */
+		public Integer getPort()
+		{
+			return port;
+		}
+
+		/**
+		 * Gets the serializer factory for connections to this server
+		 *
+		 * @return the serializerFactory
+		 */
+		public NioObjectFactory<NioSerializer> getSerializerFactory()
+		{
+			return serializerFactory;
+		}
+
+		/**
+		 * Gets the inspector factory to connections to this server
+		 *
+		 * @return the inspectorFactory
+		 */
+		public NioObjectFactory<NioInspector> getInspectorFactory()
+		{
+			return inspectorFactory;
+		}
+
+		/**
+		 * Gets the list of service factories to this server
+		 *
+		 * @return the serviceFactories
+		 */
+		public List<NioObjectFactory<NioService>> getServiceFactories()
+		{
+			return Collections.unmodifiableList(serviceFactories);
+		}
 	}
 }

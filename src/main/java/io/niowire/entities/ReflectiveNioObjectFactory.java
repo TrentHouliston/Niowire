@@ -31,7 +31,7 @@ import java.util.Map;
 public class ReflectiveNioObjectFactory<T extends NioObject> implements NioObjectFactory<T>
 {
 
-	private final String className;
+	private final Class<?> clazz;
 	private final Map<String, Object> configuration;
 
 	/**
@@ -41,14 +41,16 @@ public class ReflectiveNioObjectFactory<T extends NioObject> implements NioObjec
 	 * @param className     the class name of the object
 	 * @param configuration the configuration map to be used when creating the
 	 *                         object
+	 *
+	 * @throws ClassNotFoundException
 	 */
-	public ReflectiveNioObjectFactory(String className, Map<String, ? extends Object> configuration)
+	public ReflectiveNioObjectFactory(String className, Map<String, ? extends Object> configuration) throws ClassNotFoundException
 	{
-		//Store our class name
-		this.className = className;
-
 		//Store our configuration in an unmodifyable way
 		this.configuration = Collections.unmodifiableMap(configuration);
+
+		//Get the class object
+		clazz = Class.forName(className);
 	}
 
 	/**
@@ -66,7 +68,6 @@ public class ReflectiveNioObjectFactory<T extends NioObject> implements NioObjec
 		try
 		{
 			//Create a class object from our class name
-			Class<?> clazz = Class.forName(className);
 			Object obj = clazz.newInstance();
 
 			if (obj instanceof NioObject)
@@ -81,7 +82,7 @@ public class ReflectiveNioObjectFactory<T extends NioObject> implements NioObjec
 			}
 			else
 			{
-				throw new NioObjectCreationException(className + " is does not implement NioObject");
+				throw new NioObjectCreationException(clazz.getName() + " is does not implement NioObject");
 			}
 
 		}
@@ -98,5 +99,20 @@ public class ReflectiveNioObjectFactory<T extends NioObject> implements NioObjec
 		{
 			throw new NioObjectCreationException(ex);
 		}
+	}
+
+	/**
+	 * Checks if the passed object is an instance which would be created by this
+	 * factory (both the type and the configuration)
+	 *
+	 * @param obj the object to be tested
+	 *
+	 * @return if the object is the same (class and configuration) as this
+	 *            factory creates
+	 */
+	@Override
+	public boolean isInstance(NioObject obj)
+	{
+		return clazz.isInstance(obj) && this.configuration.equals(obj.getConfiguration());
 	}
 }

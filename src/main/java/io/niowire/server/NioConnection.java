@@ -29,6 +29,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +52,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	private static final Logger LOG = LoggerFactory.getLogger(NioConnection.class);
 	//Initial Configuration Objects
 	private SelectionKey SELECTION_KEY;
-	private NioServerDefinition SERVER_CONFIG;
+	private NioSocketServer.ActiveServer SERVER_CONFIG;
 	//Shared context
 	private Context context;
 	//Parses the binary stream into objects
@@ -83,7 +85,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	 * @throws NioConnectionException if there is a problem setting up the
 	 *                                   services
 	 */
-	public NioConnection(SelectionKey key, NioServerDefinition serverConfig) throws NioConnectionException
+	public NioConnection(SelectionKey key, NioSocketServer.ActiveServer serverConfig) throws NioConnectionException
 	{
 		//Store our variables
 		this.SELECTION_KEY = key;
@@ -134,8 +136,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	/**
 	 * Updates the interest operations on the SelectionKey, it checks if the
 	 * serializer has data to write. And if it does then it updates the
-	 * selection key to listen for Write operations as
-	 * well
+	 * selection key to listen for Write operations as well
 	 *
 	 * @throws IOException
 	 */
@@ -207,7 +208,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 			}
 		}
 
-		//Return the number of bytes remaining as the serializer should have absorbed them allf
+		//Return the number of bytes remaining as the serializer should have absorbed them all
 		return bytes;
 	}
 
@@ -341,6 +342,120 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 	public Context getContext()
 	{
 		return context;
+	}
+
+	/**
+	 * Updates the objects associated with this definition if needed from the
+	 * server definition.
+	 */
+	public void updateServerDefinition()
+	{
+		//Create some variables, if the new definition is good we will update with these at the end
+		NioSerializer newSerializer = null;
+		NioInspector newInspector = null;
+		LinkedList<NioService> servicesToAdd = new LinkedList<NioService>();
+		LinkedList<NioService> servicesToRemove;
+
+		try
+		{
+			//Check and update our serializer if we need to
+			if (!SERVER_CONFIG.getSerializerFactory().isInstance(serializer))
+			{
+				newSerializer = SERVER_CONFIG.getSerializerFactory().create();
+				newSerializer.setContext(context);
+			}
+
+			//Check and update the inspector if we need to
+			if (!SERVER_CONFIG.getInspectorFactory().isInstance(inspect))
+			{
+				newInspector = SERVER_CONFIG.getInspectorFactory().create();
+				newInspector.setContext(context);
+			}
+
+			//Make new lists we can manipulate that hold our objects
+			LinkedList<NioObjectFactory<NioService>> newServices = new LinkedList<NioObjectFactory<NioService>>(SERVER_CONFIG.getServiceFactories());
+			servicesToRemove = new LinkedList<NioService>(services);
+
+			//Loop through the factories and the services and try to match them up
+			for (Iterator<NioObjectFactory<NioService>> fit = newServices.iterator(); fit.hasNext();)
+			{
+				NioObjectFactory<NioService> factory = fit.next();
+
+				//Loop thorough the services
+				for (Iterator<NioService> sit = servicesToRemove.iterator(); sit.hasNext();)
+				{
+					NioService service = sit.next();
+					if (factory.isInstance(service))
+					{
+						//Remove the factory and the service from the lists (we have a match)
+						fit.remove();
+						sit.remove();
+						break;
+					}
+				}
+			}
+
+			//Add any new services
+			for (NioObjectFactory<NioService> factory : newServices)
+			{
+				NioService service = factory.create();
+				service.setContext(context);
+				servicesToAdd.add(service);
+			}
+
+			//Now we remove all the old services then add all the new ones
+			for (NioService service : servicesToRemove)
+			{
+				try
+				{
+					service.close();
+				}
+				catch (IOException ex)
+				{
+				}
+				finally
+				{
+					services.remove(service);
+				}
+			}
+
+			//Add all our new services
+			services.addAll(servicesToAdd);
+
+			//Update our serializer and inspector
+			if (newSerializer != null)
+			{
+				try
+				{
+					this.serializer.close();
+				}
+				catch (IOException ex)
+				{
+				}
+				finally
+				{
+					this.serializer = newSerializer;
+				}
+			}
+			if (newInspector != null)
+			{
+				try
+				{
+					this.inspect.close();
+				}
+				catch (IOException ex)
+				{
+				}
+				finally
+				{
+					this.inspect = newInspector;
+				}
+			}
+		}
+		catch (NioObjectCreationException ex)
+		{
+			//TODO log this
+		}
 	}
 
 	/**

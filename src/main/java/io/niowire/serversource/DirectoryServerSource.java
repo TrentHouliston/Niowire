@@ -66,6 +66,7 @@ public class DirectoryServerSource implements NioServerSource
 	 * Our current state
 	 */
 	private HashMap<File, Long> servers = new HashMap<File, Long>(1);
+	private Map<String, Object> configuration;
 
 	/**
 	 * {@inheritDoc}
@@ -73,6 +74,8 @@ public class DirectoryServerSource implements NioServerSource
 	@Override
 	public void configure(Map<String, Object> configuration) throws Exception
 	{
+		this.configuration = configuration;
+
 		//Get our directory from the configuration
 		String directory = (String) configuration.get("directory");
 
@@ -203,5 +206,14 @@ public class DirectoryServerSource implements NioServerSource
 
 		//Return our result
 		return changes;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Map<String, Object> getConfiguration()
+	{
+		return configuration;
 	}
 }

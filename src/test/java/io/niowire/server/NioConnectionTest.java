@@ -22,22 +22,25 @@ import io.niowire.inspection.NioAuthenticationException;
 import io.niowire.inspection.NioInspector;
 import io.niowire.serializer.NioSerializer;
 import io.niowire.server.NioConnection.Context;
+import io.niowire.server.NioSocketServer.ActiveServer;
 import io.niowire.serversource.NioServerDefinition;
 import io.niowire.service.NioService;
-import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.nio.channels.*;
-import java.nio.channels.spi.SelectorProvider;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+import org.mockito.InOrder;
 
+import static io.niowire.testutilities.CreateCommonMocks.*;
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -48,17 +51,13 @@ import static org.mockito.Mockito.*;
 public class NioConnectionTest
 {
 
-	private static final NioPacket BASE_PACKET = new NioPacket("TEST", "DATA");
-	private static final NioPacket MOD_PACKET = new NioPacket("MOD", "MOD_DATA");
-	private static final NioPacket BAD_PACKET = new NioPacket("BAD", "FAIL_AUTH");
-	private static final String SERVER_ID = "SERVER_ID";
-	private static final String SERVER_NAME = "SERVER_NAME";
-	private static final int SERVER_PORT = 12321;
-	private static final String UID = "UID";
-	private LinkedList<Event> events = new LinkedList<Event>();
 	private NioConnection connection = null;
-	private boolean hasData = false;
-	private boolean shouldTimeout = false;
+	private SelectionKey key = null;
+	private NioSerializer serialize = null;
+	private NioInspector inspect = null;
+	private NioService service = null;
+	private NioServerDefinition def = null;
+	private ActiveServer activeServer = null;
 
 	/**
 	 * Sets up a new Connection object with mocks for most of its components
@@ -69,245 +68,83 @@ public class NioConnectionTest
 	@Before
 	public void setUp() throws Exception
 	{
-		//Make a new events object
-		events = new LinkedList<Event>();
 
-		//Mock our key
-		SelectionKey key = mock(SelectionKey.class);
-		when(key.interestOps(any(int.class))).then(new Answer<SelectionKey>()
-		{
-			@Override
-			public SelectionKey answer(InvocationOnMock invocation) throws Throwable
-			{
-				//Add an event to the queue
-				events.add(new Event("key", invocation.getArguments()[0]));
+		//Create some mock objects
+		key = mock(SelectionKey.class);
+		serialize = mock(NioSerializer.class);
+		inspect = mock(NioInspector.class);
+		service = mock(NioService.class);
 
-				//Return the key (to fit the API)
-				return (SelectionKey) invocation.getMock();
-			}
-		});
-		when(key.channel()).thenReturn(SocketChannel.open());
-
-		//Mock our serializer
-		NioSerializer serialize = mock(NioSerializer.class);
-		when(serialize.deserialize(any(ByteBuffer.class))).then(new Answer<List<NioPacket>>()
-		{
-			@Override
-			public List<NioPacket> answer(InvocationOnMock invocation) throws Throwable
-			{
-				//Add an event to the queue
-				events.add(new Event("serialize", invocation.getArguments()[0]));
-
-				//If we get 0 bytes then return a bad packet
-				if (!((ByteBuffer) invocation.getArguments()[0]).hasRemaining())
-				{
-					return Collections.singletonList(BAD_PACKET);
-				}
-				//Otherwise just return the base packet
-				else
-				{
-					return Collections.singletonList(BASE_PACKET);
-				}
-			}
-		});
-		doAnswer(new Answer<Object>()
-		{
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable
-			{
-				//Add an event to the queue
-				events.add(new Event("serialize", invocation.getArguments()[0]));
-
-				return null;
-			}
-		}).when(serialize).serialize(any(NioPacket.class));
-		when(serialize.hasData()).then(new Answer<Boolean>()
-		{
-			@Override
-			public Boolean answer(InvocationOnMock invocation) throws Throwable
-			{
-				return hasData;
-			}
-		});
-		doAnswer(new Answer<Object>()
-		{
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable
-			{
-				events.add(new Event("serialize", invocation.getArguments()[0]));
-
-				return null;
-			}
-		}).when(serialize).rebuffer(any(ByteBuffer.class));
-		doAnswer(new Answer<Object>()
-		{
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable
-			{
-				events.add(new Event("serialize", "close"));
-
-				return null;
-			}
-		}).when(serialize).close();
-		when(serialize.read(any(ByteBuffer.class))).then(new Answer<Integer>()
-		{
-			@Override
-			public Integer answer(InvocationOnMock invocation) throws Throwable
-			{
-				events.add(new Event("serialize", "read"));
-
-				return ((ByteBuffer) invocation.getArguments()[0]).remaining();
-			}
-		});
-
-		//Mock our inspector
-		NioInspector inspect = mock(NioInspector.class);
-		when(inspect.inspect(any(NioPacket.class))).then(new Answer<NioPacket>()
-		{
-			@Override
-			public NioPacket answer(InvocationOnMock invocation) throws Throwable
-			{
-				//Add an event to the queue
-				events.add(new Event("inspect", invocation.getArguments()[0]));
-
-				//If we get a bad packet then throw an auth exception
-				if (invocation.getArguments()[0] == BAD_PACKET)
-				{
-					throw new NioAuthenticationException();
-				}
-				//Otherwise return a modified packet
-				else
-				{
-					return MOD_PACKET;
-				}
-			}
-		});
-		when(inspect.timeout()).then(new Answer<Boolean>()
-		{
-			@Override
-			public Boolean answer(InvocationOnMock invocation) throws Throwable
-			{
-				events.add(new Event("inspect", "timeout"));
-
-				return shouldTimeout;
-			}
-		});
-		doAnswer(new Answer<Object>()
-		{
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable
-			{
-				events.add(new Event("inspect", "close"));
-
-				return null;
-			}
-		}).when(inspect).close();
-		when(inspect.getUid()).thenReturn(UID);
-
-		//Mock our service
-		NioService service = mock(NioService.class);
-		doAnswer(new Answer<Object>()
-		{
-			@Override
-			public NioPacket answer(InvocationOnMock invocation) throws Throwable
-			{
-				//Add an event to the queue
-				events.add(new Event("service", invocation.getArguments()[0]));
-
-				return null;
-			}
-		}).when(service).send(any(NioPacket.class));
-		doAnswer(new Answer<Object>()
-		{
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable
-			{
-				events.add(new Event("service", "close"));
-
-				return null;
-			}
-		}).when(service).close();
-
-		//Create some mock factories which simply return the objects
-		@SuppressWarnings("unchecked")
-		NioObjectFactory<NioSerializer> serializeFactory = mock(NioObjectFactory.class);
-		when(serializeFactory.create()).thenReturn(serialize);
-		@SuppressWarnings("unchecked")
-		NioObjectFactory<NioInspector> inspectFactory = mock(NioObjectFactory.class);
-		when(inspectFactory.create()).thenReturn(inspect);
-		@SuppressWarnings("unchecked")
-		NioObjectFactory<NioService> serviceFactory = mock(NioObjectFactory.class);
-		when(serviceFactory.create()).thenReturn(service);
+		//Create some mock factories
+		NioObjectFactory<NioSerializer> serializeFactory = mockNioObjectFactory(serialize);
+		NioObjectFactory<NioInspector> inspectFactory = mockNioObjectFactory(inspect);
+		NioObjectFactory<NioService> serviceFactory = mockNioObjectFactory(service);
 
 		//Create our server definition with all of the passed values
-		NioServerDefinition def = new NioServerDefinition();
-		def.setId(SERVER_ID);
-		def.setName(SERVER_NAME);
-		def.setPort(SERVER_PORT);
+		def = new NioServerDefinition();
+		def.setId(DEFAULT_SERVER_ID);
+		def.setName(DEFAULT_SERVER_NAME);
+		def.setPort(DEFAULT_SERVER_PORT);
 		def.setInspectorFactory(inspectFactory);
 		def.setSerializerFactory(serializeFactory);
 		def.setServiceFactories(Collections.singletonList(serviceFactory));
 
-		connection = new NioConnection(key, def);
+		activeServer = new ActiveServer(def);
+
+		connection = new NioConnection(key, activeServer);
+
+		/*
+		 * Verify that each of the objects recieved a context (verifying here
+		 * means that each test method just has to focus on their own
+		 * verifications)
+		 */
+		verify(serialize).setContext(connection.getContext());
+		verify(inspect).setContext(connection.getContext());
+		verify(service).setContext(connection.getContext());
 	}
 
+	/**
+	 * This method sets all our local variables to be null
+	 */
+	@After
+	public void teardown()
+	{
+		this.inspect = null;
+		this.key = null;
+		this.serialize = null;
+		this.service = null;
+		this.connection = null;
+		this.activeServer = null;
+		this.def = null;
+	}
+
+	/**
+	 * Tests that when the update interest ops method is run, that it correctly
+	 * gets the state of the serializer and sets the selection key's operations
+	 * to the correct state.
+	 *
+	 * @throws Exception
+	 */
 	@Test
 	public void testUpdateInterestOps() throws Exception
 	{
-		//Just check events is empty
-		assertTrue("The events should be empty", events.isEmpty());
-
-		//Declare some variables
-		Event data;
-		Iterator<Event> it;
-
-		//Set hasData to false and update the Interest Ops
-		hasData = false;
+		//Check that when we say we have no data that we only have read
+		when(serialize.hasData()).thenReturn(false);
 		connection.updateInterestOps();
+		verify(serialize).hasData();
+		verify(key).interestOps(SelectionKey.OP_READ);
 
-		//Check our events
-		it = events.iterator();
-		data = it.next();
-
-		//Check that the key reported that the passed value is OP_READ
-		assertEquals("The event should have been from the key", "key", data.source);
-		assertEquals("The interest ops should have been read only", SelectionKey.OP_READ, data.data);
-		it.remove();
-
-		//That should have been the only event that was fired
-		assertTrue("There should be no more events", events.isEmpty());
-
-		//Set hasData to true and update the interest ops
-		hasData = true;
+		//Check that when we say we have data then we read and write
+		when(serialize.hasData()).thenReturn(true);
 		connection.updateInterestOps();
+		verify(serialize, times(2)).hasData();
+		verify(key).interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
 
-		//Check our events
-		it = events.iterator();
-		data = it.next();
-
-		//Check that the key reported that the passed value is OP_WRITE
-		assertEquals("The event should have been from the key", "key", data.source);
-		assertEquals("The interest ops should have been read and write", SelectionKey.OP_READ | SelectionKey.OP_WRITE, data.data);
-		it.remove();
-
-		//That should have been the only event
-		assertFalse("There should be no more events", it.hasNext());
-
-		//Set hasData to false again and update the Interest Ops
-		hasData = false;
+		//Check that when we say we have no data again that we go back to reading
+		when(serialize.hasData()).thenReturn(false);
 		connection.updateInterestOps();
-
-		//Check our events
-		it = events.iterator();
-		data = it.next();
-
-		//Check that the key reported that the passed value is OP_READ
-		assertEquals("The event should have been from the key", "key", data.source);
-		assertEquals("The interest ops should have been read only", SelectionKey.OP_READ, data.data);
-		it.remove();
-
-		//That should have been the only event
-		assertFalse("There should be no more events", it.hasNext());
+		verify(serialize, times(3)).hasData();
+		verify(key, times(2)).interestOps(SelectionKey.OP_READ);
 	}
 
 	/**
@@ -320,40 +157,22 @@ public class NioConnectionTest
 	@Test
 	public void testWrite() throws Exception
 	{
-		//Just check events is empty
-		assertTrue("The events should be empty", events.isEmpty());
-
-		//Declare some variables
-		Event data;
-		Iterator<Event> it;
+		//Declare our test input
 		ByteBuffer input = ByteBuffer.wrap("HELLO!".getBytes("utf-8"));
+
+		//Stub our methods so we get data flow
+		when(serialize.deserialize(any(ByteBuffer.class))).thenReturn(Collections.singletonList(BASIC_PACKET));
+		when(inspect.inspect(any(NioPacket.class))).thenReturn(MODIFIED_PACKET);
 
 		//Write our input
 		connection.write(input);
 
-		//Loop through our data
-		it = events.iterator();
+		//Verify that the data went in the direction we expected
+		InOrder order = inOrder(serialize, inspect, service);
 
-		//Check that the data first went to the serializer
-		data = it.next();
-		assertEquals("The data should have first gone to the serialiser", "serialize", data.source);
-		assertEquals("The packet should have been the input", input, data.data);
-		it.remove();
-
-		//Check that the fake packet from the serializer was then passed to the inspector
-		data = it.next();
-		assertEquals("The data should have then gone to the inspector", "inspect", data.source);
-		assertEquals("The passed in data should have been the base packet", BASE_PACKET, data.data);
-		it.remove();
-
-		//Check that then the modified packet was passed to the service
-		data = it.next();
-		assertEquals("The data should have then been passed to the services", "service", data.source);
-		assertEquals("The data passed should have been the mod packet", MOD_PACKET, data.data);
-		it.remove();
-
-		//There should be no more events
-		assertFalse("There should be no more events", it.hasNext());
+		order.verify(serialize).deserialize(input);
+		order.verify(inspect).inspect(BASIC_PACKET);
+		order.verify(service).send(MODIFIED_PACKET);
 	}
 
 	/**
@@ -365,33 +184,23 @@ public class NioConnectionTest
 	@Test
 	public void testRead() throws Exception
 	{
-		//Just check events is empty
-		assertTrue("The events should be empty", events.isEmpty());
+		//We won't have data once we read
+		when(serialize.hasData()).thenReturn(false);
 
-		//Declare some variables
-		Event data;
-		Iterator<Event> it;
+		//Create a buffer to hold it
 		ByteBuffer buff = ByteBuffer.allocate(10);
 
+		//Read into the buffer
 		connection.read(buff);
 
-		//Check our events
-		it = events.iterator();
-		data = it.next();
+		//Verify this was passed to the serializer to fill
+		verify(serialize).read(buff);
 
-		//Check that the serializer recieved the data
-		assertEquals("The event should have been from the serializer", "serialize", data.source);
-		assertEquals("The data should have been that we read", "read", data.data);
-		it.remove();
+		//Verify that we checked for data
+		verify(serialize).hasData();
 
-		//An Event will have also fired from the key (updating that there is no data to read)
-		data = it.next();
-		assertEquals("The event should have been from the key", "key", data.source);
-		assertEquals("The data should have been that there is no data to write read", SelectionKey.OP_READ, data.data);
-		it.remove();
-
-		//That should have been the only event
-		assertFalse("There should be no more events", it.hasNext());
+		//Verify that we no longer have data to read
+		verify(key).interestOps(SelectionKey.OP_READ);
 	}
 
 	/**
@@ -403,28 +212,14 @@ public class NioConnectionTest
 	@Test
 	public void testRebuffer() throws Exception
 	{
-		//Just check events is empty
-		assertTrue("The events should be empty", events.isEmpty());
-
-		//Declare some variables
-		Event data;
-		Iterator<Event> it;
-		byte[] testData = "HelloWorld".getBytes("utf-8");
+		//Create some test data
+		ByteBuffer testData = ByteBuffer.wrap("HelloWorld".getBytes("utf-8"));
 
 		//Call Rebuffer
-		connection.rebuffer(ByteBuffer.wrap(testData));
+		connection.rebuffer(testData);
 
-		//Check our events
-		it = events.iterator();
-		data = it.next();
-
-		//Check that the serializer recieved the data
-		assertEquals("The event should have been from the serializer", "serialize", data.source);
-		assertArrayEquals("The data should have been exactly what was in the data", testData, ((ByteBuffer) data.data).array());
-		it.remove();
-
-		//That should have been the only event
-		assertFalse("There should be no more events", it.hasNext());
+		//Verify that the data was sent through
+		verify(serialize).rebuffer(testData);
 	}
 
 	/**
@@ -436,117 +231,22 @@ public class NioConnectionTest
 	@Test
 	public void testClose() throws Exception
 	{
+		//Return a channel that we can close when needed
+		when(key.channel()).thenReturn(SocketChannel.open());
+
 		//Close the connection
 		connection.close();
 
+		//Verify that we closed all the objects
+		verify(serialize).close();
+		verify(inspect).close();
+		verify(service).close();
+
+		//Assume that if we got the channel it was to close it (cannot verify more as we cannot mock it)
+		verify(key).channel();
+
 		//Test that all of the methods are closed and that all of the objects in it have closed
-		testClosedMethods();
-	}
 
-	/**
-	 * Tests that when the Inspector says that the connection should timeout,
-	 * that the connection suicides.
-	 *
-	 * @throws Exception
-	 */
-	@Test
-	public void testTimeout() throws Exception
-	{
-		//Just check events is empty
-		assertTrue("The events should be empty", events.isEmpty());
-
-		//Declare some variables
-		Event data;
-		Iterator<Event> it;
-		shouldTimeout = true;
-
-		//Execute the timeout method
-		connection.timeout();
-
-		//Get our first event (the timeout one)
-		it = events.iterator();
-		data = it.next();
-
-		//Check that the inspector was asked for the timeout
-		assertEquals("The event should have been from the inspector", "inspect", data.source);
-		assertEquals("The event should have been a timeout call", "timeout", data.data);
-		it.remove();
-
-		//Test that the connection has closed down
-		testClosedMethods();
-	}
-
-	/**
-	 * Tests that when the timeout returns that we should not timeout that we
-	 * don't time out.
-	 *
-	 * @throws Exception
-	 */
-	@Test
-	public void testNoTimeout() throws Exception
-	{
-		//Just check events is empty
-		assertTrue("The events should be empty", events.isEmpty());
-
-		//Declare some variables
-		Event data;
-		Iterator<Event> it;
-		shouldTimeout = false;
-
-		//Attempt to timeout the connection
-		connection.timeout();
-
-		it = events.iterator();
-		data = it.next();
-
-		//Check that the inspector was asked for the timeout
-		assertEquals("The event should have been from the inspector", "inspect", data.source);
-		assertEquals("The event should have been a timeout call", "timeout", data.data);
-		it.remove();
-
-		//Check that the connection is still open
-		assertTrue("The connection should still be open", connection.isOpen());
-
-		//That should have been the only event
-		assertFalse("There should be no more events", it.hasNext());
-	}
-
-	/**
-	 * This is a helper method which checks
-	 *
-	 * @throws Exception
-	 */
-	private void testClosedMethods() throws Exception
-	{
-		//Declare some variables
-		Event data;
-		Iterator<Event> it;
-
-		//Get an iterator
-		it = events.iterator();
-
-		//Check that the serializer was closed
-		data = it.next();
-		assertEquals("The serializer should have closed", "serialize", data.source);
-		assertEquals("The serializer should have closed", "close", data.data);
-		it.remove();
-
-		//Check that the inspector was closed
-		data = it.next();
-		assertEquals("The inspector should have closed", "inspect", data.source);
-		assertEquals("The inspector should have closed", "close", data.data);
-		it.remove();
-
-		//Check that the service was closed
-		data = it.next();
-		assertEquals("The service should have closed", "service", data.source);
-		assertEquals("The service should have closed", "close", data.data);
-		it.remove();
-
-		/*
-		 * Test that the methods now throw closed channel exceptions (as the
-		 * resources have been cleaned up and wouldn't work anyway)
-		 */
 		try
 		{
 			connection.read(null);
@@ -583,9 +283,53 @@ public class NioConnectionTest
 		{
 			assertNotNull(ex);
 		}
+	}
 
-		//That should have been all the events
-		assertFalse("There should be no more events", it.hasNext());
+	/**
+	 * Tests that when the Inspector says that the connection should timeout,
+	 * that the connection suicides.
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testTimeout() throws Exception
+	{
+		//We want to time out
+		when(inspect.timeout()).thenReturn(true);
+		when(key.channel()).thenReturn(SocketChannel.open());
+
+		//Execute the timeout method
+		connection.timeout();
+
+		//Verify that we ran the timeout method
+		verify(inspect).timeout();
+
+		//Verify that we closed all the objects
+		verify(serialize).close();
+		verify(inspect).close();
+		verify(service).close();
+
+		//Assume that if we got the channel it was to close it (cannot verify more as we cannot mock it)
+		verify(key).channel();
+	}
+
+	/**
+	 * Tests that when the timeout returns that we should not timeout that we
+	 * don't time out.
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testNoTimeout() throws Exception
+	{
+		//We don't to time out
+		when(inspect.timeout()).thenReturn(false);
+
+		//Execute the timeout method
+		connection.timeout();
+
+		//Verify that we ran the timeout method
+		verify(inspect).timeout();
 	}
 
 	/**
@@ -597,30 +341,28 @@ public class NioConnectionTest
 	@Test
 	public void testAuthentication() throws Exception
 	{
-		//Declare some variables
-		Event data;
-		Iterator<Event> it;
+		//Stub our methods so we get data flow
+		when(serialize.deserialize(any(ByteBuffer.class))).thenReturn(Collections.singletonList(BASIC_PACKET));
+		when(inspect.inspect(any(NioPacket.class))).thenThrow(new NioAuthenticationException());
+		when(key.channel()).thenReturn(SocketChannel.open());
 
-		//Write null (to make it do a bad auth)
-		connection.write(ByteBuffer.allocate(0));
+		//Make some test data
+		ByteBuffer buff = ByteBuffer.allocate(0);
 
-		//Get our iterator
-		it = events.iterator();
+		connection.write(buff);
 
-		//Check that the data first went to the serializer
-		data = it.next();
-		assertEquals("The data should have first gone to the serializer", "serialize", data.source);
-		assertFalse("The packet have been the 0 byte buffer", ((ByteBuffer) data.data).hasRemaining());
-		it.remove();
+		InOrder order = inOrder(serialize, inspect);
 
-		//Check that the fake packet from the serializer was then passed to the inspector
-		data = it.next();
-		assertEquals("The data should have then gone to the inspector", "inspect", data.source);
-		assertEquals("The passed in data should have been the bad packet", BAD_PACKET, data.data);
-		it.remove();
+		order.verify(serialize).deserialize(buff);
+		order.verify(inspect).inspect(BASIC_PACKET);
 
-		//Because we had a bad packet, we should have closed the connection.
-		testClosedMethods();
+		//Verify that we closed all the objects
+		verify(serialize).close();
+		verify(inspect).close();
+		verify(service).close();
+
+		//Assume that if we got the channel it was to close it (cannot verify more as we cannot mock it)
+		verify(key).channel();
 	}
 
 	/**
@@ -631,78 +373,249 @@ public class NioConnectionTest
 	@Test
 	public void testContext() throws Exception
 	{
-		//Declare some variables
-		Event data;
-		Iterator<Event> it;
+		when(inspect.getUid()).thenReturn("TEST_UID");
+		when(key.channel()).thenReturn(SocketChannel.open());
 
 		//Get our context
 		Context context = connection.getContext();
 
 		//Test the UID
-		assertEquals("The UID was not correct", UID, context.getUid());
+		assertEquals("The UID was not correct", "TEST_UID", context.getUid());
+		verify(inspect).getUid();
 
 		//Test the server id
-		assertEquals("The Server ID was not correct", SERVER_ID, context.getServerId());
+		assertEquals("The Server ID was not correct", DEFAULT_SERVER_ID, context.getServerId());
 
 		//Test the server name
-		assertEquals("The Server name was not correct", SERVER_NAME, context.getServerName());
+		assertEquals("The Server name was not correct", DEFAULT_SERVER_NAME, context.getServerName());
 
 		//Test the Server Port
-		assertEquals("The Server name was not correct", SERVER_PORT, context.getServerPort());
+		assertEquals("The Server name was not correct", DEFAULT_SERVER_PORT, context.getServerPort());
 
-		//Run refreshInterestOps
+		//Check that when we say we have no data that we only have read
+		when(serialize.hasData()).thenReturn(false);
 		context.refreshInterestOps();
+		verify(serialize).hasData();
+		verify(key).interestOps(SelectionKey.OP_READ);
+
+		//Check that when we say we have data then we read and write
+		when(serialize.hasData()).thenReturn(true);
+		context.refreshInterestOps();
+		verify(serialize, times(2)).hasData();
+		verify(key).interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+
+		//Check that when we say we have no data again that we go back to reading
+		when(serialize.hasData()).thenReturn(false);
+		context.refreshInterestOps();
+		verify(serialize, times(3)).hasData();
+		verify(key, times(2)).interestOps(SelectionKey.OP_READ);
 
 		//Write a packet
-		context.write(BASE_PACKET);
+		context.write(BASIC_PACKET);
 
-		//Loop through our events
-		it = events.iterator();
+		//Verify that it was written to the serializer
+		verify(serialize).serialize(BASIC_PACKET);
 
-
-		//Check that the key reported that the passed value is OP_READ (since the has data method is fixed)
-		data = it.next();
-		assertEquals("The event should have been from the key", "key", data.source);
-		assertEquals("The interest ops should have been read only", SelectionKey.OP_READ, data.data);
-		it.remove();
-
-		//Check that the key reported that a write method had occured
-		data = it.next();
-		assertEquals("The event should have been from the serializer", "serialize", data.source);
-		assertEquals("The data should have been the base packet", BASE_PACKET, data.data);
-		it.remove();
-
-		//Check that the key reported that the passed value is OP_READ (since the has data method is fixed)
-		data = it.next();
-		assertEquals("The event should have been from the key", "key", data.source);
-		assertEquals("The interest ops should have been read only", SelectionKey.OP_READ, data.data);
-		it.remove();
+		//Verify that the interestOps were updated
+		verify(key).interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
 
 		//Get the Remote Address
 		context.getRemoteAddress();
 	}
 
 	/**
-	 * This is an object for holding the events that the tests generate.
+	 * Tests updating the servers definition that when the connection is told to
+	 * update that it replaces/updates its components
+	 *
+	 * @throws Exception
 	 */
-	private static class Event
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testUpdateServer() throws Exception
 	{
+		// <editor-fold defaultstate="collapsed" desc="Mock objects">
+		//Variables used later
+		NioSerializer currentSerializer;
+		NioInspector currentInspector;
+		List<NioService> currentServices;
 
-		public final String source;
-		public final Object data;
+		//Mock the serializers to swap around
+		NioSerializer[] serializers = new NioSerializer[3];
+		serializers[0] = mock(NioSerializer.class);
+		serializers[1] = mock(NioSerializer.class);
+		serializers[2] = mock(NioSerializer.class);
 
-		/**
-		 * Make a new event to hold the source and data for this object
-		 *
-		 * @param source the source that this event came from (e.g. serializer,
-		 *                     inspector etc.)
-		 * @param data   the data attached to this event (either information or
-		 *                     a string stating what was done)
+		//Mock the inspectors to swap around
+		NioInspector[] inspectors = new NioInspector[3];
+		inspectors[0] = mock(NioInspector.class);
+		inspectors[1] = mock(NioInspector.class);
+		inspectors[2] = mock(NioInspector.class);
+
+		//Mock the services to swap around
+		NioService[] services = new NioService[6];
+		services[0] = mock(NioService.class);
+		services[1] = mock(NioService.class);
+		services[2] = mock(NioService.class);
+		services[3] = mock(NioService.class);
+		services[4] = mock(NioService.class);
+		services[5] = mock(NioService.class);
+
+		//Mock our factories
+		@SuppressWarnings("unchecked")
+		NioObjectFactory<NioSerializer>[] serializerFactories = (NioObjectFactory<NioSerializer>[]) new NioObjectFactory<?>[3];
+		serializerFactories[0] = mockNioObjectFactory(serializers[0]);
+		serializerFactories[1] = mockNioObjectFactory(serializers[1]);
+		serializerFactories[2] = mockNioObjectFactory(serializers[2]);
+		@SuppressWarnings("unchecked")
+		NioObjectFactory<NioInspector>[] inspectorFactories = (NioObjectFactory<NioInspector>[]) new NioObjectFactory<?>[3];
+		inspectorFactories[0] = mockNioObjectFactory(inspectors[0]);
+		inspectorFactories[1] = mockNioObjectFactory(inspectors[1]);
+		inspectorFactories[2] = mockNioObjectFactory(inspectors[2]);
+
+		//Mock our service factories
+		@SuppressWarnings("unchecked")
+		NioObjectFactory<NioService>[] serviceFactories = (NioObjectFactory<NioService>[]) new NioObjectFactory<?>[6];
+		serviceFactories[0] = mockNioObjectFactory(services[0]);
+		serviceFactories[1] = mockNioObjectFactory(services[1]);
+		serviceFactories[2] = mockNioObjectFactory(services[2]);
+		serviceFactories[3] = mockNioObjectFactory(services[3]);
+		serviceFactories[4] = mockNioObjectFactory(services[4]);
+		serviceFactories[5] = mockNioObjectFactory(services[5]);
+
+		//Get the fields we will be looking at
+		Field si = connection.getClass().getDeclaredField("serializer");
+		si.setAccessible(true);
+		Field in = connection.getClass().getDeclaredField("inspect");
+		in.setAccessible(true);
+		Field sv = connection.getClass().getDeclaredField("services");
+		sv.setAccessible(true);
+		//</editor-fold>
+
+		//<editor-fold defaultstate="collapsed" desc="First Test (Update Everything)">
+		//Update our definition
+		def.setSerializerFactory(serializerFactories[0]);
+		def.setInspectorFactory(inspectorFactories[0]);
+		def.setServiceFactories(Arrays.asList(serviceFactories));
+
+		//Update our active server and definition
+		activeServer.update(def);
+		connection.updateServerDefinition();
+
+		//Look inside and extract all the values we needed
+		currentSerializer = (NioSerializer) si.get(connection);
+		currentInspector = (NioInspector) in.get(connection);
+		currentServices = (List<NioService>) sv.get(connection);
+
+		//Look inside the connection and make sure that it's serializer/inspector/services are those that are expected
+		assertEquals("The serializer was not updated", serializers[0], currentSerializer);
+		assertEquals("The inspector was not updated", inspectors[0], currentInspector);
+		assertTrue("The services were not updated as expected", Arrays.asList(services).containsAll(currentServices));
+		assertTrue("The services were not updated as expected", currentServices.containsAll(Arrays.asList(services)));
+
+		/*
+		 * Make sure that the setContext method was called on all these objects.
+		 * If this method is called that means that these objects were newly
+		 * created.
 		 */
-		private Event(String source, Object data)
+		verify(serializers[0]).setContext(connection.getContext());
+		verify(inspectors[0]).setContext(connection.getContext());
+		for (NioService s : services)
 		{
-			this.source = source;
-			this.data = data;
+			verify(s).setContext(connection.getContext());
 		}
+
+		//Check that the old objects were closed
+		verify(serialize).close();
+		verify(inspect).close();
+		verify(service).close();
+		//</editor-fold>
+
+		//<editor-fold defaultstate="collapsed" desc="Second Test (Update Inspector, Remove 5 Services)">
+		//Update our definition
+		def.setSerializerFactory(serializerFactories[0]);
+		def.setInspectorFactory(inspectorFactories[1]);
+		def.setServiceFactories(Collections.singletonList(serviceFactories[0]));
+
+		//Update our active server and definition
+		activeServer.update(def);
+		connection.updateServerDefinition();
+
+		//Look inside and extract all the values we needed
+		currentSerializer = (NioSerializer) si.get(connection);
+		currentInspector = (NioInspector) in.get(connection);
+		currentServices = (List<NioService>) sv.get(connection);
+
+		//Look inside the connection and make sure that it's serializer/inspector/services are those that are expected
+		assertEquals("The serializer was not updated", serializers[0], currentSerializer);
+		assertEquals("The inspector was not updated", inspectors[1], currentInspector);
+		assertEquals("The services were not updated as expected", 1, currentServices.size());
+		assertTrue("The services were not updated as expected", currentServices.contains(services[0]));
+
+		/*
+		 * Make sure that the setContext method was called on all these objects.
+		 * If this method is called that means that these objects were newly
+		 * created.
+		 */
+		verify(inspectors[1]).setContext(connection.getContext());
+		verify(services[1]).setContext(connection.getContext());
+
+		//Check that the old objects were closed and that the objects that are staying are not
+		verify(inspectors[0]).close();
+		for (int i = 1; i < 6; i++)
+		{
+			verify(services[i]).close();
+		}
+		//</editor-fold>
+
+		//<editor-fold defaultstate="collapsed" desc="Third Test (Update Serializer & Inspector, Add 2 Services)">
+		//Update our definition
+		def.setSerializerFactory(serializerFactories[1]);
+		def.setInspectorFactory(inspectorFactories[2]);
+		def.setServiceFactories(Arrays.asList((NioObjectFactory<NioService>[]) new NioObjectFactory<?>[]
+				{
+					serviceFactories[0], serviceFactories[1], serviceFactories[2]
+				}));
+
+		//Update our active server and definition
+		activeServer.update(def);
+		connection.updateServerDefinition();
+
+		//Look inside and extract all the values we needed
+		currentSerializer = (NioSerializer) si.get(connection);
+		currentInspector = (NioInspector) in.get(connection);
+		currentServices = (List<NioService>) sv.get(connection);
+
+		//Look inside the connection and make sure that it's serializer/inspector/services are those that are expected
+		assertEquals("The serializer was not updated", serializers[1], currentSerializer);
+		assertEquals("The inspector was not updated", inspectors[2], currentInspector);
+		assertEquals("The services were not updated as expected", 3, currentServices.size());
+		assertTrue("The services were not updated as expected", currentServices.containsAll(Arrays.asList(new NioService[]
+				{
+					services[0], services[1], services[2]
+				})));
+
+		/*
+		 * Make sure that the setContext method was called on all these objects.
+		 * If this method is called that means that these objects were newly
+		 * created.
+		 */
+		verify(inspectors[1]).setContext(connection.getContext());
+		verify(services[2], times(2)).setContext(connection.getContext());
+
+		//Check that the old objects were closed and that the objects that are staying are not
+		verify(serializers[0]).close();
+		verify(inspectors[1]).close();
+
+		//Verify that our old services closed
+		for (int i = 4; i < 6; i++)
+		{
+			verify(services[i]).close();
+		}
+
+		//Verify our new services started
+		verify(services[1], times(2)).setContext(connection.getContext());
+		verify(services[2], times(2)).setContext(connection.getContext());
+		//</editor-fold>
+
 	}
 }

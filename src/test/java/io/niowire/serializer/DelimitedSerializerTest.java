@@ -570,6 +570,8 @@ public class DelimitedSerializerTest
 	public static class DelimitedSerializerImpl extends DelimitedSerializer
 	{
 
+		private Map<String, Object> configuration;
+
 		/**
 		 * This method deserializes the data into a byte array and makes this
 		 * the data.
@@ -633,7 +635,16 @@ public class DelimitedSerializerTest
 		@Override
 		public void configure(Map<String, Object> configuration) throws Exception
 		{
-			//Do nothing
+			this.configuration = configuration;
+		}
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public Map<String, Object> getConfiguration()
+		{
+			return configuration;
 		}
 	}
 }

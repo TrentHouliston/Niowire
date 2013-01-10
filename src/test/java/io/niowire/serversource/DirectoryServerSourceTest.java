@@ -43,8 +43,6 @@ public class DirectoryServerSourceTest
 	/**
 	 * This sets up the test directory with 5 server files (all the same)
 	 *
-	 * @return the directory that contains the server definition files
-	 *
 	 * @throws Exception
 	 */
 	@Before
@@ -104,6 +102,9 @@ public class DirectoryServerSourceTest
 
 		//Use our temporary directory as our source
 		source.configure(Collections.singletonMap("directory", (Object) tempDir.getAbsolutePath()));
+
+		//Quick test to make sure that the configuration we get is exactly what we put in
+		assertEquals("The returned configuration should be what we put in", source.getConfiguration(), Collections.singletonMap("directory", (Object) tempDir.getAbsolutePath()));
 
 		//Get the changes (should be all the servers)
 		Map<NioServerDefinition, Event> servers = source.getChanges();

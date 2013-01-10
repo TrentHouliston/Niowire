@@ -19,7 +19,6 @@ package io.niowire.serversource;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.inspection.NioInspector;
 import io.niowire.serializer.NioSerializer;
-import io.niowire.server.NioPropertyUnchangableException;
 import io.niowire.service.NioService;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -164,31 +163,5 @@ public class NioServerDefinition
 	{
 		//Wrap it so that nobody else has access to our shared state
 		this.serviceFactories = new LinkedList<NioObjectFactory<NioService>>(serviceFactories);
-	}
-
-	/**
-	 * This method is used to update the server definition object with the
-	 * details from the new server object.
-	 *
-	 * @param server the new server object to change
-	 *
-	 * @throws NioPropertyUnchangableException if a property which cannot change
-	 *                                            live is changed (e.g. the port
-	 *                                            we are listening on)
-	 */
-	public void update(NioServerDefinition server) throws NioPropertyUnchangableException
-	{
-		//We don't update the IDs
-		//this.setId(server.getId());
-		this.setName(server.getName());
-		this.setSerializerFactory(server.getSerializerFactory());
-		this.setInspectorFactory(server.getInspectorFactory());
-		this.setServiceFactories(server.getServiceFactories());
-
-		if (this.getPort() == null && server.getPort() != null
-			|| !this.getPort().equals(server.getPort()))
-		{
-			throw new NioPropertyUnchangableException();
-		}
 	}
 }

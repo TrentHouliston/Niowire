@@ -57,6 +57,9 @@ public class LineSerializerTest
 		serializer.configure(Collections.singletonMap("charset", (Object) charset));
 		serializer.setContext(context);
 
+		//Quick test to make sure that the configuration we get is exactly what we put in
+		assertEquals("The returned configuration should be what we put in", serializer.getConfiguration(), Collections.singletonMap("charset", (Object) charset));
+
 		//Allocate a buffer to hold the result
 		ByteBuffer buffer = ByteBuffer.allocate(100);
 

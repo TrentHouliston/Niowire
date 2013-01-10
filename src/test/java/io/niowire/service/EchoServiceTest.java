@@ -21,10 +21,8 @@ import io.niowire.server.NioConnection;
 import io.niowire.server.NioConnection.Context;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashSet;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+import org.mockito.InOrder;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -47,51 +45,53 @@ public class EchoServiceTest
 	public void testEcho() throws Exception
 	{
 		//Build some test data
-		String[] messages = new String[]
+		NioPacket[] packets = new NioPacket[]
 		{
-			"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"
+			new NioPacket("Test", "A"),
+			new NioPacket("Test", "B"),
+			new NioPacket("Test", "C"),
+			new NioPacket("Test", "D"),
+			new NioPacket("Test", "E"),
+			new NioPacket("Test", "F"),
+			new NioPacket("Test", "G"),
+			new NioPacket("Test", "H"),
+			new NioPacket("Test", "I"),
+			new NioPacket("Test", "J"),
+			new NioPacket("Test", "K"),
+			new NioPacket("Test", "L"),
+			new NioPacket("Test", "M")
 		};
 
 		//Create and configure a new echo service
 		EchoService echo = new EchoService();
 		echo.configure(Collections.<String, Object>emptyMap());
 
-		//Build some hash sets to store our result
-		final HashSet<NioPacket> sent = new HashSet<NioPacket>();
-		final HashSet<NioPacket> returned = new HashSet<NioPacket>();
+		//Quick test to make sure that the configuration we get is exactly what we put in
+		assertEquals("The returned configuration should be what we put in", echo.getConfiguration(), Collections.<String, Object>emptyMap());
 
 		//Mock a context
 		NioConnection.Context context = mock(NioConnection.Context.class);
 		when(context.getUid()).thenReturn("TEST");
 
-		//Mock our write method so that the objects are put into the hash set
-		doAnswer(new Answer<String>()
-		{
-			@Override
-			public String answer(InvocationOnMock invocation) throws Throwable
-			{
-				NioPacket packet = (NioPacket) invocation.getArguments()[0];
-				returned.add(packet);
-				return "Wrote back " + packet;
-			}
-		}).when(context).write(any(NioPacket.class));
-
 		//Set echo's context as this mocked object
 		echo.setContext(context);
 
 		//Loop through our strings
-		for (String s : messages)
+		for (NioPacket p : packets)
 		{
-			//Create a new packet
-			NioPacket packet = new NioPacket("TEST", s);
-
-			//Add and send the packet
-			sent.add(packet);
-			echo.send(packet);
+			//send the packet
+			echo.send(p);
 		}
 
-		//Check the two are equal
-		assertArrayEquals(sent.toArray(), returned.toArray());
+		//Verify that the packets are written back in order
+		InOrder order = inOrder(context);
+		for (NioPacket packet : packets)
+		{
+			order.verify(context).write(packet);
+		}
+
+		//Check that that was all that was sent
+		order.verifyNoMoreInteractions();
 	}
 
 	/**

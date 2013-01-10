@@ -65,6 +65,9 @@ public class StaticServerSourceTest
 		StaticServerSource source = new StaticServerSource(defs.toArray(new NioServerDefinition[defs.size()]));
 		source.configure(Collections.<String, Object>emptyMap());
 
+		//Quick test to make sure that the configuration we get is exactly what we put in
+		assertEquals("The returned configuration should be what we put in", source.getConfiguration(), Collections.<String, Object>emptyMap());
+
 		//Get the changes (should be all the servers)
 		Map<NioServerDefinition, Event> servers = source.getChanges();
 

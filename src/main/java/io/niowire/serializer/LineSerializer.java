@@ -48,6 +48,7 @@ public class LineSerializer extends DelimitedSerializer
 	 * Our decoder (not not thread safe)
 	 */
 	private CharsetEncoder ENCODER = null;
+	private Map<String, Object> configuration;
 
 	/**
 	 * This method overrides from the Delimited serializer and deserializes the
@@ -121,6 +122,8 @@ public class LineSerializer extends DelimitedSerializer
 	@Override
 	public void configure(Map<String, Object> configuration) throws Exception
 	{
+		this.configuration = configuration;
+
 		//Get our charset property
 		String charset = (String) configuration.get("charset");
 
@@ -174,5 +177,14 @@ public class LineSerializer extends DelimitedSerializer
 	protected String serializeString(NioPacket obj) throws NioInvalidDataException
 	{
 		return obj.getData().toString();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Map<String, Object> getConfiguration()
+	{
+		return configuration;
 	}
 }

@@ -37,4 +37,15 @@ public interface NioObjectFactory<T extends NioObject>
 	 *                                       to create this object.
 	 */
 	public T create() throws NioObjectCreationException;
+
+	/**
+	 * Tests if the passed object is an object which is created by this factory
+	 * (a subclass will return false)
+	 *
+	 * @param obj the object to check against
+	 *
+	 * @return if this object is an instance of the class this object factory
+	 *            creates
+	 */
+	public boolean isInstance(T obj);
 }
