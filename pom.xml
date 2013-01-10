@@ -242,5 +242,6 @@
 		<org-netbeans-modules-editor-indent.text.x-java.CodeStyle.project.methodDeclBracePlacement>NEW_LINE</org-netbeans-modules-editor-indent.text.x-java.CodeStyle.project.methodDeclBracePlacement>
 		<org-netbeans-modules-editor-indent.text.x-java.CodeStyle.project.importGroupsOrder>*;static *</org-netbeans-modules-editor-indent.text.x-java.CodeStyle.project.importGroupsOrder>
 		<org-netbeans-modules-editor-indent.text.x-java.CodeStyle.project.classMemberInsertionPoint>LAST_IN_CATEGORY</org-netbeans-modules-editor-indent.text.x-java.CodeStyle.project.classMemberInsertionPoint>
+		<netbeans.compile.on.save>all</netbeans.compile.on.save>
 	</properties>
 </project>

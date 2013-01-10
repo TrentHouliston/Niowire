@@ -718,7 +718,7 @@ public class NioSocketServer implements Runnable
 	 * serializer factory is null. It uses the Line serializer which will pass
 	 * through the packets as being line based.
 	 */
-	private static class DefaultSerializerFactory implements NioObjectFactory<NioSerializer>
+	static class DefaultSerializerFactory implements NioObjectFactory<NioSerializer>
 	{
 
 		//The charset used is the default platform charset
@@ -766,7 +766,7 @@ public class NioSocketServer implements Runnable
 	 * This class is the default Inspector factory which uses the Null inspector
 	 * (ignores all packets)
 	 */
-	private static class DefaultInspectorFactory implements NioObjectFactory<NioInspector>
+	static class DefaultInspectorFactory implements NioObjectFactory<NioInspector>
 	{
 		//There is no configuration for this class
 
@@ -805,7 +805,7 @@ public class NioSocketServer implements Runnable
 		@Override
 		public boolean isInstance(NioInspector obj)
 		{
-			return LineSerializer.class.equals(obj.getClass()) && config.equals(obj.getConfiguration());
+			return NullInspector.class.equals(obj.getClass()) && config.equals(obj.getConfiguration());
 		}
 	}
 }

@@ -20,8 +20,12 @@ import io.niowire.data.NioPacket;
 import io.niowire.entities.NioObjectCreationException;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.inspection.NioInspector;
+import io.niowire.inspection.NullInspector;
+import io.niowire.serializer.LineSerializer;
 import io.niowire.serializer.NioSerializer;
 import io.niowire.server.NioConnection.Context;
+import io.niowire.server.NioSocketServer.DefaultInspectorFactory;
+import io.niowire.server.NioSocketServer.DefaultSerializerFactory;
 import io.niowire.serversource.NioServerDefinition;
 import io.niowire.service.NioService;
 import java.io.IOException;
@@ -805,6 +809,35 @@ public class NioSocketServerTest
 		//Wait until the thread dies.
 		t.join();
 		//</editor-fold>
+	}
+
+	/**
+	 * Tests the default factories to make sure that they behave as expected
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000) public void testDefaultFactories() throws Exception
+	{
+		//Get the factories
+		DefaultSerializerFactory defaultSerializer = new DefaultSerializerFactory();
+		DefaultInspectorFactory defaultInspector = new DefaultInspectorFactory();
+
+		//Create a serializer and inspector
+		NioSerializer serialize = defaultSerializer.create();
+		NioInspector inspect = defaultInspector.create();
+
+		//Check that they recognize their own objects
+		assertTrue(defaultSerializer.isInstance(serialize));
+		assertTrue(defaultInspector.isInstance(inspect));
+
+		//Check that they recognize other objects of the same type
+		LineSerializer lineSerializer = new LineSerializer();
+		lineSerializer.configure(Collections.singletonMap("charset", Charset.defaultCharset().name()));
+		NullInspector nullInspector = new NullInspector();
+		nullInspector.configure(Collections.<String, Object>emptyMap());
+
+		assertTrue(defaultSerializer.isInstance(lineSerializer));
+		assertTrue(defaultInspector.isInstance(nullInspector));
 	}
 
 	/**
