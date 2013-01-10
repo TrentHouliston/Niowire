@@ -38,7 +38,7 @@ import static org.mockito.Mockito.*;
 public class LineSerializerTest
 {
 
-	@Test
+	@Test(timeout = 1000)
 	public void testSerialize() throws Exception
 	{
 		//Using UTF-8
@@ -54,11 +54,11 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", (Object) charset));
+		serializer.configure(Collections.singletonMap("charset", charset));
 		serializer.setContext(context);
 
 		//Quick test to make sure that the configuration we get is exactly what we put in
-		assertEquals("The returned configuration should be what we put in", serializer.getConfiguration(), Collections.singletonMap("charset", (Object) charset));
+		assertEquals("The returned configuration should be what we put in", serializer.getConfiguration(), Collections.singletonMap("charset", charset));
 
 		//Allocate a buffer to hold the result
 		ByteBuffer buffer = ByteBuffer.allocate(100);
@@ -76,7 +76,7 @@ public class LineSerializerTest
 		assertArrayEquals("The returned data was not the expected result", expected, result);
 	}
 
-	@Test
+	@Test(timeout = 1000)
 	public void testDeserialize() throws Exception
 	{
 		//Using UTF-8
@@ -92,7 +92,7 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", (Object) charset));
+		serializer.configure(Collections.singletonMap("charset", charset));
 		serializer.setContext(context);
 
 		//Wrap the message in a buffer
@@ -108,7 +108,7 @@ public class LineSerializerTest
 		assertEquals("The wrong data was returned", expected, packets.get(0).getData());
 	}
 
-	@Test
+	@Test(timeout = 1000)
 	public void testMultiLineDeserialize() throws Exception
 	{
 		//Using UTF-8
@@ -126,7 +126,7 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", (Object) charset));
+		serializer.configure(Collections.singletonMap("charset", charset));
 		serializer.setContext(context);
 
 		//Wrap the message in a buffer
@@ -152,7 +152,7 @@ public class LineSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testCarriageReturns() throws Exception
 	{
 		//Using UTF-8
@@ -170,7 +170,7 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", (Object) charset));
+		serializer.configure(Collections.singletonMap("charset", charset));
 		serializer.setContext(context);
 
 		//Wrap the message in a buffer
@@ -195,7 +195,7 @@ public class LineSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testCharsets() throws Exception
 	{
 		String[] charsets = new String[]
@@ -217,7 +217,7 @@ public class LineSerializerTest
 
 			//Build our serializer
 			LineSerializer serializer = new LineSerializer();
-			serializer.configure(Collections.singletonMap("charset", (Object) charset));
+			serializer.configure(Collections.singletonMap("charset", charset));
 			serializer.setContext(context);
 
 			//Wrap the message in a buffer
@@ -239,7 +239,7 @@ public class LineSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testUnicodeSerialize() throws Exception
 	{
 		//Using UTF-8
@@ -255,7 +255,7 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", (Object) charset));
+		serializer.configure(Collections.singletonMap("charset", charset));
 		serializer.setContext(context);
 
 		//Allocate a buffer to hold the result
@@ -279,7 +279,7 @@ public class LineSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testUnicodeDeserialize() throws Exception
 	{
 		//Using UTF-8
@@ -295,7 +295,7 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", (Object) charset));
+		serializer.configure(Collections.singletonMap("charset", charset));
 		serializer.setContext(context);
 
 		//Wrap the message in a buffer
@@ -317,7 +317,7 @@ public class LineSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testInvalidUnicodeCharactersDeserialize() throws Exception
 	{
 		//We are testing using UTF-8 (other charsets should work the same)
@@ -345,7 +345,7 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", (Object) charset));
+		serializer.configure(Collections.singletonMap("charset", charset));
 		serializer.setContext(context);
 
 		//Get our packets

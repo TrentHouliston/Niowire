@@ -37,7 +37,7 @@ public class NullInspectorTest
 	/**
 	 * Test that we get our UID properly from the context
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testGetUid() throws Exception
 	{
 		//Build our NullInspector
@@ -61,7 +61,7 @@ public class NullInspectorTest
 	/**
 	 * Test that we do nothing with the results
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testInspect() throws Exception
 	{
 		//Test that we do nothing with the results
@@ -80,7 +80,7 @@ public class NullInspectorTest
 	 * Test that when we close the Inspector, every operation throws a closed
 	 * channel exception, and that timeout will return true.
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testClose() throws Exception
 	{
 		//Create a new inspector

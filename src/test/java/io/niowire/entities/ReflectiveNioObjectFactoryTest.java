@@ -36,7 +36,7 @@ public class ReflectiveNioObjectFactoryTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testObjectCreation() throws Exception
 	{
 		//Build a new factory
@@ -45,13 +45,8 @@ public class ReflectiveNioObjectFactoryTest
 		//Try to create an object
 		NioObjectImpl obj = factory.create();
 
-		//Run close
-		obj.close();
-
-		/*
-		 * If we reached here then the test passed (otherwise a
-		 * ClassCastException would have been thrown above)
-		 */
+		//Check the class is correct
+		assertEquals("The class of this object should be the class that was passed in", Class.forName(NioObjectImpl.class.getName()), obj.getClass());
 	}
 
 	/**
@@ -60,7 +55,7 @@ public class ReflectiveNioObjectFactoryTest
 	 *
 	 * @throws Exception ex
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testInvalidObjectCreationExceptionWrapping() throws Exception
 	{
 		try
@@ -87,7 +82,7 @@ public class ReflectiveNioObjectFactoryTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNonNioObjectCreation() throws Exception
 	{
 		try
@@ -110,7 +105,7 @@ public class ReflectiveNioObjectFactoryTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testRuntimeExceptionsAreWrapped() throws Exception
 	{
 		try
@@ -128,12 +123,34 @@ public class ReflectiveNioObjectFactoryTest
 	}
 
 	/**
+	 * Tests that a subclass of the object that this factory creates is not
+	 * considered an object it creates. This is important as otherwise a
+	 * LineSerializer would be considered the same as a JsonSerializer and would
+	 * not update when changed.
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testSubclassIsNotConsideredInstance() throws Exception
+	{
+		//Build a new factory
+		ReflectiveNioObjectFactory<NioObjectImpl> factory = new ReflectiveNioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.<String, NioObject>emptyMap());
+
+		//Create a subclass of this object
+		NioObjectImplExt ext = new NioObjectImplExt();
+		ext.configure(Collections.<String, Object>emptyMap());
+
+		//Check that it's not considered an instance
+		assertFalse("The subclass should not be considered an instance of this factorys object", factory.isInstance(ext));
+	}
+
+	/**
 	 * Tests the isInstance method (checks that objects created by this (or that
 	 * could be created by this) return true, and other objects return false
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testIsInstance() throws Exception
 	{
 		//Build a new factory
@@ -152,16 +169,16 @@ public class ReflectiveNioObjectFactoryTest
 		//Create a random object
 		NioObject obj4 = new NioObject()
 		{
-			private Map<String, Object> configuration;
+			private Map<String, ? extends Object> configuration;
 
 			@Override
-			public void configure(Map<String, Object> configuration) throws Exception
+			public void configure(Map<String, ? extends Object> configuration) throws Exception
 			{
 				this.configuration = configuration;
 			}
 
 			@Override
-			public Map<String, Object> getConfiguration()
+			public Map<String, ? extends Object> getConfiguration()
 			{
 				return configuration;
 			}
@@ -186,7 +203,7 @@ public class ReflectiveNioObjectFactoryTest
 	public static class NioObjectImpl implements NioObject
 	{
 
-		private Map<String, Object> configuration;
+		private Map<String, ? extends Object> configuration;
 
 		/**
 		 * Configure the object. If the map contains the key "exception" then it
@@ -200,7 +217,7 @@ public class ReflectiveNioObjectFactoryTest
 		 * @throws RuntimeException if the configuration has the "runtime" key
 		 */
 		@Override
-		public void configure(Map<String, Object> configuration) throws Exception
+		public void configure(Map<String, ? extends Object> configuration) throws Exception
 		{
 			this.configuration = configuration;
 
@@ -231,9 +248,17 @@ public class ReflectiveNioObjectFactoryTest
 		 * {@inheritDoc}
 		 */
 		@Override
-		public Map<String, Object> getConfiguration()
+		public Map<String, ? extends Object> getConfiguration()
 		{
 			return configuration;
 		}
+	}
+
+	/**
+	 * An extention of the NioObjectImpl class to test that subclasses are not
+	 * considered to be superclasses
+	 */
+	private static class NioObjectImplExt extends NioObjectImpl
+	{
 	}
 }

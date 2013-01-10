@@ -66,13 +66,13 @@ public class DirectoryServerSource implements NioServerSource
 	 * Our current state
 	 */
 	private HashMap<File, Long> servers = new HashMap<File, Long>(1);
-	private Map<String, Object> configuration;
+	private Map<String, ? extends Object> configuration;
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void configure(Map<String, Object> configuration) throws Exception
+	public void configure(Map<String, ? extends Object> configuration) throws Exception
 	{
 		this.configuration = configuration;
 
@@ -212,7 +212,7 @@ public class DirectoryServerSource implements NioServerSource
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Map<String, Object> getConfiguration()
+	public Map<String, ? extends Object> getConfiguration()
 	{
 		return configuration;
 	}

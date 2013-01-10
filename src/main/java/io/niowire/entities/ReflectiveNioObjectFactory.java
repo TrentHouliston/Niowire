@@ -113,6 +113,6 @@ public class ReflectiveNioObjectFactory<T extends NioObject> implements NioObjec
 	@Override
 	public boolean isInstance(NioObject obj)
 	{
-		return clazz.isInstance(obj) && this.configuration.equals(obj.getConfiguration());
+		return obj != null && clazz.equals(obj.getClass()) && this.configuration.equals(obj.getConfiguration());
 	}
 }

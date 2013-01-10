@@ -58,7 +58,7 @@ public class NioSocketServerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testReadWriteClientClose() throws Exception
 	{
 		//<editor-fold defaultstate="collapsed" desc="Setup Server and Mocking">
@@ -118,7 +118,7 @@ public class NioSocketServerTest
 
 		//<editor-fold defaultstate="collapsed" desc="Test Reading from client">
 		//Connect to the server and send a message (test read)
-		Socket con = new Socket(InetAddress.getLocalHost(), serverPort);
+		Socket con = new Socket(InetAddress.getLoopbackAddress(), serverPort);
 		con.getOutputStream().write("Hello World!!".getBytes("utf-8"));
 
 		packetCaptor = ArgumentCaptor.forClass(NioPacket.class);
@@ -149,6 +149,13 @@ public class NioSocketServerTest
 		byte[] bytes = new byte["Sending you back some data".getBytes("utf-8").length];
 		con.getInputStream().read(bytes);
 		assertArrayEquals(bytes, "Sending you back some data".getBytes("utf-8"));
+		//</editor-fold>
+
+		//<editor-fold defaultstate="collapsed" desc="Test client closing connection">
+		con.close();
+
+		//Check that the serializer closes (implying the connection closes)
+		verify(serializer, timeout(100)).close();
 
 		//Shutdown the server
 		server.shutdown();
@@ -176,7 +183,7 @@ public class NioSocketServerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testModifyingServers() throws Exception
 	{
 		//<editor-fold defaultstate="collapsed" desc="Setup Server and Mocking">
@@ -285,9 +292,9 @@ public class NioSocketServerTest
 
 		//<editor-fold defaultstate="collapsed" desc="Initial Write Check">
 		//Connect three sockets to the connection
-		sockets[0] = new Socket(InetAddress.getLocalHost(), serverPorts[0]);
-		sockets[1] = new Socket(InetAddress.getLocalHost(), serverPorts[1]);
-		sockets[2] = new Socket(InetAddress.getLocalHost(), serverPorts[2]);
+		sockets[0] = new Socket(InetAddress.getLoopbackAddress(), serverPorts[0]);
+		sockets[1] = new Socket(InetAddress.getLoopbackAddress(), serverPorts[1]);
+		sockets[2] = new Socket(InetAddress.getLoopbackAddress(), serverPorts[2]);
 
 		//Check that all three sockets connected
 		assertTrue("Socket 0 did not connect", sockets[0].isConnected());
@@ -444,7 +451,7 @@ public class NioSocketServerTest
 		//Attempt to connect the socket to the old ports (should fail)
 		try
 		{
-			new Socket(InetAddress.getLocalHost(), serverPorts[0]).isConnected();
+			new Socket(InetAddress.getLoopbackAddress(), serverPorts[0]).isConnected();
 			fail("The old ports should now be closed");
 		}
 		catch (IOException ex)
@@ -452,7 +459,7 @@ public class NioSocketServerTest
 		}
 		try
 		{
-			new Socket(InetAddress.getLocalHost(), serverPorts[1]).isConnected();
+			new Socket(InetAddress.getLoopbackAddress(), serverPorts[1]).isConnected();
 			fail("The old ports should now be closed");
 		}
 		catch (IOException ex)
@@ -460,7 +467,7 @@ public class NioSocketServerTest
 		}
 		try
 		{
-			new Socket(InetAddress.getLocalHost(), serverPorts[2]).isConnected();
+			new Socket(InetAddress.getLoopbackAddress(), serverPorts[2]).isConnected();
 			fail("The old ports should now be closed");
 		}
 		catch (IOException ex)
@@ -472,9 +479,9 @@ public class NioSocketServerTest
 		assertFalse("Connection 3 has died", sockets[2].isClosed());
 
 		//Make 3 new connections to the server
-		sockets[3] = new Socket(InetAddress.getLocalHost(), serverPorts[3]);
-		sockets[4] = new Socket(InetAddress.getLocalHost(), serverPorts[4]);
-		sockets[5] = new Socket(InetAddress.getLocalHost(), serverPorts[5]);
+		sockets[3] = new Socket(InetAddress.getLoopbackAddress(), serverPorts[3]);
+		sockets[4] = new Socket(InetAddress.getLoopbackAddress(), serverPorts[4]);
+		sockets[5] = new Socket(InetAddress.getLoopbackAddress(), serverPorts[5]);
 
 		//Make sure they connected
 		assertTrue("The new ports did not connect properly", sockets[3].isConnected());
@@ -626,7 +633,7 @@ public class NioSocketServerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	@SuppressWarnings("unchecked")
 	public void testExceptionDuringConnectionCreation() throws Exception
 	{
@@ -660,7 +667,7 @@ public class NioSocketServerTest
 		//</editor-fold>
 
 		//<editor-fold defaultstate="collapsed" desc="Test Connecting to bad server">
-		Socket con = new Socket(InetAddress.getLocalHost(), serverPort);
+		Socket con = new Socket(InetAddress.getLoopbackAddress(), serverPort);
 
 		//Wait for the factory to try to create the object
 		verify(factory, timeout(100)).create();
@@ -679,7 +686,7 @@ public class NioSocketServerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testExceptionDuringDataReceive() throws Exception
 	{
 		//<editor-fold defaultstate="collapsed" desc="Setup Server and Mocking">
@@ -703,7 +710,7 @@ public class NioSocketServerTest
 		NioObjectFactory<NioService> serviceFactory = mockNioObjectFactory(service);
 
 		//Mock our data flow
-		when(serializer.deserialize(any(ByteBuffer.class))).thenThrow(Exception.class);
+		when(serializer.deserialize(any(ByteBuffer.class))).thenThrow(new IOException());
 
 		//Build our first definition
 		def = new NioServerDefinition();
@@ -721,12 +728,11 @@ public class NioSocketServerTest
 
 		//Add the server
 		serverPort = server.addServer(def);
-
 		//</editor-fold>
 
 		//<editor-fold defaultstate="collapsed" desc="Test Reading causing exception">
 		//Connect to the server and send a message (test read)
-		Socket con = new Socket(InetAddress.getLocalHost(), serverPort);
+		Socket con = new Socket(InetAddress.getLoopbackAddress(), serverPort);
 		con.getOutputStream().write("Hello World!!".getBytes("utf-8"));
 
 		//Wait for the methods to run
@@ -742,7 +748,7 @@ public class NioSocketServerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testShutdown() throws Exception
 	{
 		//<editor-fold defaultstate="collapsed" desc="Setup Server and Mocking">
@@ -781,7 +787,7 @@ public class NioSocketServerTest
 		serverPort = server.addServer(def);
 
 		//Connect to the server
-		Socket con = new Socket(InetAddress.getLocalHost(), serverPort);
+		Socket con = new Socket(InetAddress.getLoopbackAddress(), serverPort);
 
 		//Tell the server to shut down
 		server.shutdown();

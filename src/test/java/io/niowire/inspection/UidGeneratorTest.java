@@ -34,7 +34,7 @@ public class UidGeneratorTest
 	/**
 	 * Test the method which accepts a socket address
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testAddressToUid() throws Exception
 	{
 		InetAddress inet;

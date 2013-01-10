@@ -41,7 +41,7 @@ public class EchoServiceTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testEcho() throws Exception
 	{
 		//Build some test data
@@ -101,7 +101,7 @@ public class EchoServiceTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testExceptionOnWrite() throws Exception
 	{
 		Context mock = mock(NioConnection.Context.class);
@@ -118,7 +118,7 @@ public class EchoServiceTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testUnusedMethods() throws Exception
 	{
 		EchoService service = new EchoService();

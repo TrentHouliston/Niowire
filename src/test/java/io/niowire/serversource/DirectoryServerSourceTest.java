@@ -94,17 +94,17 @@ public class DirectoryServerSourceTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testDirectoryServerInitialAdd() throws Exception
 	{
 		//Create our DirectoryServerSource object
 		DirectoryServerSource source = new DirectoryServerSource();
 
 		//Use our temporary directory as our source
-		source.configure(Collections.singletonMap("directory", (Object) tempDir.getAbsolutePath()));
+		source.configure(Collections.singletonMap("directory", tempDir.getAbsolutePath()));
 
 		//Quick test to make sure that the configuration we get is exactly what we put in
-		assertEquals("The returned configuration should be what we put in", source.getConfiguration(), Collections.singletonMap("directory", (Object) tempDir.getAbsolutePath()));
+		assertEquals("The returned configuration should be what we put in", source.getConfiguration(), Collections.singletonMap("directory", tempDir.getAbsolutePath()));
 
 		//Get the changes (should be all the servers)
 		Map<NioServerDefinition, Event> servers = source.getChanges();
@@ -153,14 +153,14 @@ public class DirectoryServerSourceTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testUpdateServer() throws Exception
 	{
 		//Create our DirectoryServerSource object
 		DirectoryServerSource source = new DirectoryServerSource();
 
 		//Use our temporary directory as our source
-		source.configure(Collections.singletonMap("directory", (Object) tempDir.getAbsolutePath()));
+		source.configure(Collections.singletonMap("directory", tempDir.getAbsolutePath()));
 
 		//Check that 5 servers were returned
 		assertEquals("The wrong number of server definitions were returned", 5, source.getChanges().size());
@@ -210,14 +210,14 @@ public class DirectoryServerSourceTest
 		source.close();
 	}
 
-	@Test
+	@Test(timeout = 1000)
 	public void testDeleteServer() throws Exception
 	{
 		//Create our DirectoryServerSource object
 		DirectoryServerSource source = new DirectoryServerSource();
 
 		//Use our temporary directory as our source
-		source.configure(Collections.singletonMap("directory", (Object) tempDir.getAbsolutePath()));
+		source.configure(Collections.singletonMap("directory", tempDir.getAbsolutePath()));
 
 		//Check that 5 servers were returned
 		assertEquals("The wrong number of server definitions were returned", 5, source.getChanges().size());
@@ -265,14 +265,14 @@ public class DirectoryServerSourceTest
 		source.close();
 	}
 
-	@Test
+	@Test(timeout = 1000)
 	public void testAddServer() throws Exception
 	{
 		//Create our DirectoryServerSource object
 		DirectoryServerSource source = new DirectoryServerSource();
 
 		//Use our temporary directory as our source
-		source.configure(Collections.singletonMap("directory", (Object) tempDir.getAbsolutePath()));
+		source.configure(Collections.singletonMap("directory", tempDir.getAbsolutePath()));
 
 		//Check that 5 servers were returned
 		assertEquals("The wrong number of server definitions were returned", 5, source.getChanges().size());
@@ -328,14 +328,14 @@ public class DirectoryServerSourceTest
 	 * This tests that when an invalid server definition is put into the
 	 * directory, it is ignored.
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testInvalidServerDefinition() throws Exception
 	{
 		//Create our DirectoryServerSource object
 		DirectoryServerSource source = new DirectoryServerSource();
 
 		//Use our temporary directory as our source
-		source.configure(Collections.singletonMap("directory", (Object) tempDir.getAbsolutePath()));
+		source.configure(Collections.singletonMap("directory", tempDir.getAbsolutePath()));
 
 		//Check that 5 servers were returned
 		assertEquals("The wrong number of server definitions were returned", 5, source.getChanges().size());

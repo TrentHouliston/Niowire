@@ -17,8 +17,12 @@
 package io.niowire.server;
 
 import io.niowire.NiowireException;
+import io.niowire.entities.NioObjectCreationException;
 import io.niowire.entities.NioObjectFactory;
+import io.niowire.entities.ReflectiveNioObjectFactory;
 import io.niowire.inspection.NioInspector;
+import io.niowire.inspection.NullInspector;
+import io.niowire.serializer.LineSerializer;
 import io.niowire.serializer.NioSerializer;
 import io.niowire.serversource.Event;
 import io.niowire.serversource.NioServerDefinition;
@@ -30,9 +34,9 @@ import java.net.InetSocketAddress;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +55,10 @@ public class NioSocketServer implements Runnable
 
 	//The logger for the server
 	private static final Logger LOG = LoggerFactory.getLogger(NioSocketServer.class);
+	//The default Serializer
+	private static final DefaultSerializerFactory DEFAULT_SERIALIZER = new DefaultSerializerFactory();
+	//The default inspector
+	private static final DefaultInspectorFactory DEFAULT_INSPECTOR = new DefaultInspectorFactory();
 	//The selector picking which socket to do next
 	private final Selector channels;
 	//Byte buffer for reading data into
@@ -264,7 +272,7 @@ public class NioSocketServer implements Runnable
 									}
 									catch (BufferOverflowException ex)
 									{
-										//TODO handle this case
+										LOG.error("Buffer overflow exception while attempting to parse the data");
 									}
 								}
 							}
@@ -302,7 +310,6 @@ public class NioSocketServer implements Runnable
 						//Set our last timeout check
 						lastTimeout = System.currentTimeMillis();
 
-						//TODO here there can be a concurrent modification exception if the servers are modified, need to get exclusive access to the selector during this
 						//Loop through all the keys
 						for (SelectionKey key : channels.keys())
 						{
@@ -346,7 +353,7 @@ public class NioSocketServer implements Runnable
 			}
 			catch (IOException ex)
 			{
-				if (ex.getMessage().equals("Connection reset by peer"))
+				if (ex.getMessage() != null && ex.getMessage().equals("Connection reset by peer"))
 				{
 					/*
 					 * This paticular exception occurs from time to time and
@@ -437,9 +444,13 @@ public class NioSocketServer implements Runnable
 		key.channel().close();
 		ActiveServer active = (ActiveServer) key.attachment();
 
+		//Create a new list to hold the elements (since we will be mutating it we can't use the original list)
+		LinkedList<NioConnection> connections = new LinkedList<NioConnection>(active.connections);
+
 		//Close all the sockets which are connected to this server
-		for (NioConnection con : active.connections)
+		for (NioConnection con : connections)
 		{
+			//TODO this method alters the collection we are working on! screwing up our iteration!
 			con.close();
 		}
 	}
@@ -509,13 +520,13 @@ public class NioSocketServer implements Runnable
 	 */
 	private void connectionClosed(SelectionKey key) throws IOException
 	{
-		//Log that the connection has closed
-		LOG.info("Client {} has disconnected", key.attachment());
+		//Get our connection
+		NioConnection con = (NioConnection) key.attachment();
 
-		//TODO Remove from the ActiveServer object
+		//Log that the connection has closed
+		LOG.info("Client {} has disconnected", con);
 
 		//Clean everything up
-		NioConnection con = (NioConnection) key.attachment();
 		con.close();
 		key.channel().close();
 	}
@@ -580,8 +591,8 @@ public class NioSocketServer implements Runnable
 			this.id = def.getId();
 			this.name = def.getName();
 			this.port = def.getPort();
-			this.serializerFactory = def.getSerializerFactory();
-			this.inspectorFactory = def.getInspectorFactory();
+			this.serializerFactory = def.getSerializerFactory() == null ? DEFAULT_SERIALIZER : def.getSerializerFactory();
+			this.inspectorFactory = def.getInspectorFactory() == null ? DEFAULT_INSPECTOR : def.getInspectorFactory();
 			this.serviceFactories = def.getServiceFactories();
 		}
 
@@ -605,8 +616,8 @@ public class NioSocketServer implements Runnable
 
 			//Update our details
 			this.name = def.getName();
-			this.serializerFactory = def.getSerializerFactory();
-			this.inspectorFactory = def.getInspectorFactory();
+			this.serializerFactory = def.getSerializerFactory() == null ? DEFAULT_SERIALIZER : def.getSerializerFactory();
+			this.inspectorFactory = def.getInspectorFactory() == null ? DEFAULT_INSPECTOR : def.getInspectorFactory();
 			this.serviceFactories = def.getServiceFactories();
 			this.port = def.getPort();
 
@@ -688,6 +699,113 @@ public class NioSocketServer implements Runnable
 		public List<NioObjectFactory<NioService>> getServiceFactories()
 		{
 			return Collections.unmodifiableList(serviceFactories);
+		}
+
+		/**
+		 * Removes the passed connection from this server's list of active
+		 * connections
+		 *
+		 * @param con the connection to remove
+		 */
+		void remove(NioConnection con)
+		{
+			connections.remove(con);
+		}
+	}
+
+	/**
+	 * This class is the default serializer factory which is used if the
+	 * serializer factory is null. It uses the Line serializer which will pass
+	 * through the packets as being line based.
+	 */
+	private static class DefaultSerializerFactory implements NioObjectFactory<NioSerializer>
+	{
+
+		//The charset used is the default platform charset
+		private static final Map<String, ? extends Object> config = Collections.singletonMap("charset", Charset.defaultCharset().name());
+
+		/**
+		 * Creates a new instance of the LineSerializer
+		 *
+		 * @return a new instance of the LineSerializer
+		 *
+		 * @throws NioObjectCreationException this should never occur
+		 */
+		@Override
+		public NioSerializer create() throws NioObjectCreationException
+		{
+			try
+			{
+				//Make a new serializer and configure it
+				LineSerializer serializer = new LineSerializer();
+				serializer.configure(config);
+				return serializer;
+			}
+			catch (Exception ex)
+			{
+				throw new NioObjectCreationException(ex);
+			}
+		}
+
+		/**
+		 * This checks if the object is a LineSerializer using the default
+		 * charset as the config
+		 *
+		 * @param obj the object to test
+		 *
+		 * @return if the object could have been made by this factory
+		 */
+		@Override
+		public boolean isInstance(NioSerializer obj)
+		{
+			return LineSerializer.class.equals(obj.getClass()) && config.equals(obj.getConfiguration());
+		}
+	}
+
+	/**
+	 * This class is the default Inspector factory which uses the Null inspector
+	 * (ignores all packets)
+	 */
+	private static class DefaultInspectorFactory implements NioObjectFactory<NioInspector>
+	{
+		//There is no configuration for this class
+
+		private static final Map<String, Object> config = Collections.<String, Object>emptyMap();
+
+		/**
+		 * Creates a new NullInspector object
+		 *
+		 * @return a new NullInspector object
+		 *
+		 * @throws NioObjectCreationException should not happen
+		 */
+		@Override
+		public NioInspector create() throws NioObjectCreationException
+		{
+			try
+			{
+				//Create and configure our insepctor
+				NullInspector inspector = new NullInspector();
+				inspector.configure(config);
+				return inspector;
+			}
+			catch (Exception ex)
+			{
+				throw new NioObjectCreationException(ex);
+			}
+		}
+
+		/**
+		 * This checks if the object is a NullInspector with an empty config
+		 *
+		 * @param obj the object to test
+		 *
+		 * @return if the object could have been made by this factory
+		 */
+		@Override
+		public boolean isInstance(NioInspector obj)
+		{
+			return LineSerializer.class.equals(obj.getClass()) && config.equals(obj.getConfiguration());
 		}
 	}
 }

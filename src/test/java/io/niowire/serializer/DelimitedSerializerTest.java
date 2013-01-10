@@ -39,7 +39,7 @@ public class DelimitedSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testDeserialize() throws Exception
 	{
 		//Create a serializer
@@ -79,7 +79,7 @@ public class DelimitedSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testBuffering() throws Exception
 	{
 		//Create a serializer
@@ -138,7 +138,7 @@ public class DelimitedSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testRead() throws Exception
 	{
 		//Create a serializer
@@ -190,7 +190,7 @@ public class DelimitedSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testSplitRead() throws Exception
 	{
 		//Create a serializer
@@ -275,7 +275,7 @@ public class DelimitedSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testMultiPacketSerialize() throws Exception
 	{
 		//Create a serializer
@@ -333,7 +333,7 @@ public class DelimitedSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testBoundaryRead() throws Exception
 	{
 		//Create a serializer
@@ -391,7 +391,7 @@ public class DelimitedSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testDataReturn() throws Exception
 	{
 		//Create a serializer
@@ -455,7 +455,7 @@ public class DelimitedSerializerTest
 	 * Tests that when an exception is thrown while serializing, that it is
 	 * ignored and not serialized.
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testExceptionThrownOnSerialize() throws Exception
 	{
 		//Create a serializer
@@ -479,7 +479,7 @@ public class DelimitedSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testClose() throws Exception
 	{
 		//Create a serializer
@@ -570,7 +570,7 @@ public class DelimitedSerializerTest
 	public static class DelimitedSerializerImpl extends DelimitedSerializer
 	{
 
-		private Map<String, Object> configuration;
+		private Map<String, ? extends Object> configuration;
 
 		/**
 		 * This method deserializes the data into a byte array and makes this
@@ -633,7 +633,7 @@ public class DelimitedSerializerTest
 		 * @throws Exception
 		 */
 		@Override
-		public void configure(Map<String, Object> configuration) throws Exception
+		public void configure(Map<String, ? extends Object> configuration) throws Exception
 		{
 			this.configuration = configuration;
 		}
@@ -642,7 +642,7 @@ public class DelimitedSerializerTest
 		 * {@inheritDoc}
 		 */
 		@Override
-		public Map<String, Object> getConfiguration()
+		public Map<String, ? extends Object> getConfiguration()
 		{
 			return configuration;
 		}

@@ -35,7 +35,7 @@ public class NullInspector implements NioInspector
 	//Our context
 	private Context context = null;
 	private boolean open = true;
-	private Map<String, Object> configuration;
+	private Map<String, ? extends Object> configuration;
 
 	/**
 	 * We use the UID generator to generate our UID based on the remoteAddress
@@ -93,7 +93,7 @@ public class NullInspector implements NioInspector
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void configure(Map<String, Object> configuration) throws Exception
+	public void configure(Map<String, ? extends Object> configuration) throws Exception
 	{
 		this.configuration = configuration;
 	}
@@ -111,7 +111,7 @@ public class NullInspector implements NioInspector
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Map<String, Object> getConfiguration()
+	public Map<String, ? extends Object> getConfiguration()
 	{
 		return configuration;
 	}

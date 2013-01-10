@@ -37,7 +37,7 @@ public class JsonSerializerTest
 
 		//Build our serializer
 		serializer = new JsonSerializer();
-		serializer.configure(Collections.singletonMap("charset", (Object) charset));
+		serializer.configure(Collections.singletonMap("charset", charset));
 		serializer.setContext(context);
 	}
 
@@ -56,7 +56,7 @@ public class JsonSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testSerialize() throws Exception
 	{
 		//Create some test data packets (using a linked map so it maintains order in the output)
@@ -96,7 +96,7 @@ public class JsonSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testSerializePojo() throws Exception
 	{
 		//Create some test data packets (using a linked map so it maintains order in the output)
@@ -125,7 +125,7 @@ public class JsonSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testDeserialize() throws Exception
 	{
 		//Set up some test data and expected results
@@ -154,7 +154,7 @@ public class JsonSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testUnicodeJsonStrings() throws Exception
 	{
 		//Create some test data packets (using a linked map so it maintains order in the output)
@@ -181,7 +181,7 @@ public class JsonSerializerTest
 	/**
 	 * Test that a Json array works as expected when serialized
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testserializeJsonArray() throws Exception
 	{
 		//Create some test data packets (using a linked map so it maintains order in the output)
@@ -211,7 +211,7 @@ public class JsonSerializerTest
 	/**
 	 * Test that a Json array works as expected when deserialized
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testDeserializeJsonArray() throws Exception
 	{
 		//Using UTF-8
@@ -244,7 +244,7 @@ public class JsonSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testInvalidJson() throws Exception
 	{
 		//Using UTF-8

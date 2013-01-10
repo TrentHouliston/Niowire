@@ -48,7 +48,7 @@ public class LineSerializer extends DelimitedSerializer
 	 * Our decoder (not not thread safe)
 	 */
 	private CharsetEncoder ENCODER = null;
-	private Map<String, Object> configuration;
+	private Map<String, ? extends Object> configuration;
 
 	/**
 	 * This method overrides from the Delimited serializer and deserializes the
@@ -120,7 +120,7 @@ public class LineSerializer extends DelimitedSerializer
 	 * @throws Exception there is an exception while setting up the encoders
 	 */
 	@Override
-	public void configure(Map<String, Object> configuration) throws Exception
+	public void configure(Map<String, ? extends Object> configuration) throws Exception
 	{
 		this.configuration = configuration;
 
@@ -183,7 +183,7 @@ public class LineSerializer extends DelimitedSerializer
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Map<String, Object> getConfiguration()
+	public Map<String, ? extends Object> getConfiguration()
 	{
 		return configuration;
 	}

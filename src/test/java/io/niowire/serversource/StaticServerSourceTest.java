@@ -39,7 +39,7 @@ public class StaticServerSourceTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testStaticServerSource() throws Exception
 	{
 		LinkedList<NioServerDefinition> defs = new LinkedList<NioServerDefinition>();

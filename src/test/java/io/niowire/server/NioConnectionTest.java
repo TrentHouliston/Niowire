@@ -125,7 +125,7 @@ public class NioConnectionTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testUpdateInterestOps() throws Exception
 	{
 		//Check that when we say we have no data that we only have read
@@ -154,7 +154,7 @@ public class NioConnectionTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testWrite() throws Exception
 	{
 		//Declare our test input
@@ -181,7 +181,7 @@ public class NioConnectionTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testRead() throws Exception
 	{
 		//We won't have data once we read
@@ -209,7 +209,7 @@ public class NioConnectionTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testRebuffer() throws Exception
 	{
 		//Create some test data
@@ -228,7 +228,7 @@ public class NioConnectionTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testClose() throws Exception
 	{
 		//Return a channel that we can close when needed
@@ -291,7 +291,7 @@ public class NioConnectionTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testTimeout() throws Exception
 	{
 		//We want to time out
@@ -319,7 +319,7 @@ public class NioConnectionTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNoTimeout() throws Exception
 	{
 		//We don't to time out
@@ -338,7 +338,7 @@ public class NioConnectionTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testAuthentication() throws Exception
 	{
 		//Stub our methods so we get data flow
@@ -370,7 +370,7 @@ public class NioConnectionTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testContext() throws Exception
 	{
 		when(inspect.getUid()).thenReturn("TEST_UID");
@@ -429,7 +429,7 @@ public class NioConnectionTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	@SuppressWarnings("unchecked")
 	public void testUpdateServer() throws Exception
 	{

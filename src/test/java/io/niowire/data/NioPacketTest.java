@@ -36,7 +36,7 @@ public class NioPacketTest
 	/**
 	 * Tests the basic get methods perform as expected
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testPacket()
 	{
 		//Create our packet and store the creation time
@@ -56,7 +56,7 @@ public class NioPacketTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testEquals() throws Exception
 	{
 		//Create three packets
@@ -117,7 +117,7 @@ public class NioPacketTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testCompareTo() throws Exception
 	{
 		//Set the length we are testing

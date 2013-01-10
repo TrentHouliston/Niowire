@@ -294,6 +294,9 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 			service.close();
 		}
 
+		//Remove ourselves from our activeserver object
+		SERVER_CONFIG.remove(this);
+
 		//Wipe out variables so they can be garbage collected
 		serializer = null;
 		inspect = null;
@@ -454,7 +457,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 		}
 		catch (NioObjectCreationException ex)
 		{
-			//TODO log this
+			LOG.error("There was an exception while trying to update the server with the updated definition", ex);
 		}
 	}
 

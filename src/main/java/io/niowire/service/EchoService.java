@@ -20,7 +20,7 @@ public class EchoService implements NioService
 	private static final Logger LOG = LoggerFactory.getLogger(EchoService.class);
 	//The context of this connection
 	private Context context;
-	private Map<String, Object> configuration;
+	private Map<String, ? extends Object> configuration;
 
 	/**
 	 * Gets a packet of data to process from the client. It will be returned
@@ -46,7 +46,7 @@ public class EchoService implements NioService
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void configure(Map<String, Object> configuration) throws Exception
+	public void configure(Map<String, ? extends Object> configuration) throws Exception
 	{
 		this.configuration = configuration;
 	}
@@ -73,7 +73,7 @@ public class EchoService implements NioService
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Map<String, Object> getConfiguration()
+	public Map<String, ? extends Object> getConfiguration()
 	{
 		return configuration;
 	}

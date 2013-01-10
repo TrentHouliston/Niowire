@@ -71,7 +71,7 @@ public class ThrowablesTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNiowireException() throws Exception
 	{
 		testThrowable(NiowireException.class);
@@ -82,7 +82,7 @@ public class ThrowablesTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testRuntimeNiowireException() throws Exception
 	{
 		testThrowable(RuntimeNiowireException.class);
@@ -93,7 +93,7 @@ public class ThrowablesTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNioAuthenticationException() throws Exception
 	{
 		testThrowable(NioAuthenticationException.class);
@@ -104,7 +104,7 @@ public class ThrowablesTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNioConnectionException() throws Exception
 	{
 		testThrowable(NioConnectionException.class);
@@ -115,7 +115,7 @@ public class ThrowablesTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNioInvalidDataException() throws Exception
 	{
 		testThrowable(NioInvalidDataException.class);
@@ -126,7 +126,7 @@ public class ThrowablesTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNioObjectCreationException() throws Exception
 	{
 		testThrowable(NioObjectCreationException.class);

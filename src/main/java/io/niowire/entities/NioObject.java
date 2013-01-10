@@ -39,12 +39,12 @@ public interface NioObject extends Closeable
 	 *
 	 * @throws Exception if there was an exception while configuring
 	 */
-	public void configure(Map<String, Object> configuration) throws Exception;
+	public void configure(Map<String, ? extends Object> configuration) throws Exception;
 
 	/**
 	 * Gets the configuration which was used to setup this object.
 	 *
 	 * @return the configuration which was used to setup this object.
 	 */
-	public Map<String, Object> getConfiguration();
+	public Map<String, ? extends Object> getConfiguration();
 }
