@@ -628,6 +628,14 @@ public class NioSocketServerTest
 
 		//Shutdown the server
 		server.shutdown();
+
+		//Close our socket (to clean up)
+		sockets[0].close();
+		sockets[1].close();
+		sockets[2].close();
+		sockets[3].close();
+		sockets[4].close();
+		sockets[5].close();
 		//</editor-fold>
 	}
 
@@ -681,6 +689,9 @@ public class NioSocketServerTest
 
 		//Shutdown the server
 		server.shutdown();
+
+		//Close our socket (to clean up)
+		con.close();
 		//</editor-fold>
 	}
 
@@ -743,6 +754,9 @@ public class NioSocketServerTest
 		verify(serializer, timeout(100)).deserialize(any(ByteBuffer.class));
 
 		assertTrue("The thread should still be alive", t.isAlive());
+
+		//Close our socket (to clean up)
+		con.close();
 		//</editor-fold>
 	}
 
@@ -808,6 +822,9 @@ public class NioSocketServerTest
 
 		//Wait until the thread dies.
 		t.join();
+
+		//Close our socket (to clean up)
+		con.close();
 		//</editor-fold>
 	}
 
