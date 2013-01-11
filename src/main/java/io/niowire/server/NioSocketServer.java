@@ -27,7 +27,6 @@ import io.niowire.serializer.NioSerializer;
 import io.niowire.serversource.Event;
 import io.niowire.serversource.NioServerDefinition;
 import io.niowire.serversource.NioServerSource;
-import io.niowire.serversource.StaticServerSource;
 import io.niowire.service.NioService;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -59,14 +58,18 @@ public class NioSocketServer implements Runnable
 	private static final DefaultSerializerFactory DEFAULT_SERIALIZER = new DefaultSerializerFactory();
 	//The default inspector
 	private static final DefaultInspectorFactory DEFAULT_INSPECTOR = new DefaultInspectorFactory();
+	//Our thread group
+	public final ThreadGroup LIVEWIRE_GROUP = new ThreadGroup("Livewire");
 	//The selector picking which socket to do next
 	private final Selector channels;
 	//Byte buffer for reading data into
 	private final ByteBuffer buffer;
 	//The last time we checked for connections which have timed out
 	private long lastTimeout = 0;
-	//The server source
-	private final NioServerSource source;
+	//The server source execution object
+	private final SourceRunner sourceRunner;
+	//The server source execution thread
+	private final Thread sourceRunnerThread;
 	//The servers
 	private final HashMap<String, SelectionKey> servers = new HashMap<String, SelectionKey>(1);
 	//If we should shutdown
@@ -99,18 +102,6 @@ public class NioSocketServer implements Runnable
 	{
 		try
 		{
-			//If we got passed null as the source that means that they are going
-			//to manage the servers manually, use a static source of nothing
-			if (source == null)
-			{
-				this.source = new StaticServerSource();
-			}
-			//Otherwise store the source they provided
-			else
-			{
-				this.source = source;
-			}
-
 			//Allocate 8k for our buffer to read from sockets
 			buffer = ByteBuffer.allocateDirect(8192);
 
@@ -125,6 +116,21 @@ public class NioSocketServer implements Runnable
 		{
 			throw new NiowireException("Was unable to setup the server due to an error", ex);
 		}
+
+		//If we got passed null as the source that means that they are going
+		//to manage the servers manually
+		if (source != null)
+		{
+			//Create a new SourceRunner with the passed source
+			this.sourceRunner = new SourceRunner(source);
+			this.sourceRunnerThread = new Thread(this.sourceRunner);
+			this.sourceRunnerThread.setDaemon(true);
+		}
+		else
+		{
+			this.sourceRunner = null;
+			this.sourceRunnerThread = null;
+		}
 	}
 
 	/**
@@ -136,6 +142,12 @@ public class NioSocketServer implements Runnable
 	@Override
 	public void run()
 	{
+		//Start up our source runner thread
+		if (this.sourceRunnerThread != null)
+		{
+			this.sourceRunnerThread.start();
+		}
+
 		while (true)
 		{
 			try
@@ -323,28 +335,6 @@ public class NioSocketServer implements Runnable
 						}
 					}
 
-					//Update any servers which have changed in the server source
-					for (Entry<NioServerDefinition, Event> server : source.getChanges().entrySet())
-					{
-						//Get our config
-						NioServerDefinition config = server.getKey();
-
-						switch (server.getValue())
-						{
-							//If we are adding a server then add a server
-							case SERVER_ADD:
-								addServer(config);
-								break;
-							//If we are removing a server then remove the server
-							case SERVER_REMOVE:
-								removeServer(config);
-								break;
-							//If we are updating a server then update the server
-							case SERVER_UPDATE:
-								updateServer(config);
-								break;
-						}
-					}
 				}
 			}
 			catch (CancelledKeyException ex)
@@ -450,7 +440,6 @@ public class NioSocketServer implements Runnable
 		//Close all the sockets which are connected to this server
 		for (NioConnection con : connections)
 		{
-			//TODO this method alters the collection we are working on! screwing up our iteration!
 			con.close();
 		}
 	}
@@ -561,6 +550,89 @@ public class NioSocketServer implements Runnable
 
 		//Return the created server
 		return serv;
+	}
+
+	/**
+	 * This class is responsible for monitoring the ServerSource for any new
+	 * sources in it. It should then apply the changes stated by the server
+	 * source to the server.
+	 */
+	private class SourceRunner implements Runnable
+	{
+
+		public static final int SLEEP_TIME = 5000;
+		/**
+		 * The server source
+		 */
+		private final NioServerSource source;
+
+		/**
+		 * Creates a new SourceRunner with the passed source
+		 *
+		 * @param source the source of the servers
+		 */
+		private SourceRunner(NioServerSource source)
+		{
+			this.source = source;
+		}
+
+		/**
+		 * The run method checks for any new servers and when they are found it
+		 * updates the SocketServer. If the source is blocking it will wait
+		 * until a source is found, otherwise it will implement a 5 second
+		 * polling policy;
+		 */
+		@Override
+		public void run()
+		{
+			while (true)
+			{
+				try
+				{
+					//Update any servers which have changed in the server source
+					for (Entry<NioServerDefinition, Event> server : source.getChanges().entrySet())
+					{
+						try
+						{
+							//Get our config
+							NioServerDefinition config = server.getKey();
+
+							switch (server.getValue())
+							{
+								//If we are adding a server then add a server
+								case SERVER_ADD:
+									addServer(config);
+									break;
+								//If we are removing a server then remove the server
+								case SERVER_REMOVE:
+									removeServer(config);
+									break;
+								//If we are updating a server then update the server
+								case SERVER_UPDATE:
+									updateServer(config);
+									break;
+							}
+						}
+						catch (IOException ex)
+						{
+							LOG.warn("There was an exception while trying to update the server");
+						}
+					}
+
+					//If it is not a blocking server source then wait 5 seconds
+					if (!source.isBlocking())
+					{
+						Thread.sleep(SLEEP_TIME);
+					}
+				}
+				catch (RuntimeException ex)
+				{
+				}
+				catch (Exception ex)
+				{
+				}
+			}
+		}
 	}
 
 	/**

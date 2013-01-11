@@ -216,4 +216,14 @@ public class DirectoryServerSource implements NioServerSource
 	{
 		return configuration;
 	}
+
+	/**
+	 * Returns false as this source is currently not a blocking source
+	 * @return false
+	 */
+	@Override
+	public boolean isBlocking()
+	{
+		return false;
+	}
 }

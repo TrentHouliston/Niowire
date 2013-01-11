@@ -38,8 +38,19 @@ public interface NioServerSource extends NioObject
 	 *
 	 * @return a map of ServerDefinitions and changes that have happened to them
 	 *
-	 * @throws IOException if there is an IOException from the source of these
-	 *                        servers
+	 * @throws IOException          if there is an IOException from the source
+	 *                                 of these servers
+	 * @throws InterruptedException if this is a blocking server source and the thread
+	 *                                 was interrupted
 	 */
-	public Map<NioServerDefinition, Event> getChanges() throws IOException;
+	public Map<NioServerDefinition, Event> getChanges() throws IOException, InterruptedException;
+
+	/**
+	 * This method checks if a source is blocking. If it is then the
+	 * SourceRunner which is monitoring it will not wait between fetches of the
+	 * servers.
+	 *
+	 * @return if the server source is blocking
+	 */
+	public boolean isBlocking();
 }
