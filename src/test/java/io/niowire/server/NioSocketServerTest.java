@@ -24,8 +24,6 @@ import io.niowire.inspection.NullInspector;
 import io.niowire.serializer.LineSerializer;
 import io.niowire.serializer.NioSerializer;
 import io.niowire.server.NioConnection.Context;
-import io.niowire.server.NioSocketServer.DefaultInspectorFactory;
-import io.niowire.server.NioSocketServer.DefaultSerializerFactory;
 import io.niowire.serversource.Event;
 import io.niowire.serversource.NioServerDefinition;
 import io.niowire.serversource.NioServerSource;
@@ -958,8 +956,8 @@ public class NioSocketServerTest
 	public void testDefaultFactories() throws Exception
 	{
 		//Get the factories
-		DefaultSerializerFactory defaultSerializer = new DefaultSerializerFactory();
-		DefaultInspectorFactory defaultInspector = new DefaultInspectorFactory();
+		NioObjectFactory<? extends NioSerializer> defaultSerializer = NioSocketServer.DEFAULT_SERIALIZER;
+		NioObjectFactory<? extends NioInspector> defaultInspector = NioSocketServer.DEFAULT_INSPECTOR;
 
 		//Create a serializer and inspector
 		NioSerializer serialize = defaultSerializer.create();

@@ -19,7 +19,6 @@ package io.niowire.server;
 import io.niowire.NiowireException;
 import io.niowire.entities.NioObjectCreationException;
 import io.niowire.entities.NioObjectFactory;
-import io.niowire.entities.ReflectiveNioObjectFactory;
 import io.niowire.inspection.NioInspector;
 import io.niowire.inspection.NullInspector;
 import io.niowire.serializer.LineSerializer;
@@ -55,9 +54,9 @@ public class NioSocketServer implements Runnable
 	//The logger for the server
 	private static final Logger LOG = LoggerFactory.getLogger(NioSocketServer.class);
 	//The default Serializer
-	private static final DefaultSerializerFactory DEFAULT_SERIALIZER = new DefaultSerializerFactory();
+	static final NioObjectFactory<LineSerializer> DEFAULT_SERIALIZER = new NioObjectFactory<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", Charset.defaultCharset().name()));
 	//The default inspector
-	private static final DefaultInspectorFactory DEFAULT_INSPECTOR = new DefaultInspectorFactory();
+	static final NioObjectFactory<NullInspector> DEFAULT_INSPECTOR = new NioObjectFactory<NullInspector>(NullInspector.class);
 	//Our thread group
 	public final ThreadGroup LIVEWIRE_GROUP = new ThreadGroup("Livewire");
 	//The selector picking which socket to do next
@@ -763,7 +762,7 @@ public class NioSocketServer implements Runnable
 		 * @param factory the factory
 		 */
 		@Override
-		public void setSerializerFactory(NioObjectFactory<NioSerializer> factory)
+		public void setSerializerFactory(NioObjectFactory<? extends NioSerializer> factory)
 		{
 			throw new UnsupportedOperationException("Cannot change a factory on an active server, Update instead");
 		}
@@ -774,7 +773,7 @@ public class NioSocketServer implements Runnable
 		 * @param factory the inspectorFactory
 		 */
 		@Override
-		public void setInspectorFactory(NioObjectFactory<NioInspector> factory)
+		public void setInspectorFactory(NioObjectFactory<? extends NioInspector> factory)
 		{
 			throw new UnsupportedOperationException("Cannot change a factory on an active server, Update instead");
 		}
@@ -785,7 +784,7 @@ public class NioSocketServer implements Runnable
 		 * @param factory the serviceFactories
 		 */
 		@Override
-		public void setServiceFactories(List<? extends NioObjectFactory<NioService>> factory)
+		public void setServiceFactories(List<? extends NioObjectFactory<? extends NioService>> factory)
 		{
 			throw new UnsupportedOperationException("Cannot change a factory on an active server, Update instead");
 		}
@@ -799,102 +798,6 @@ public class NioSocketServer implements Runnable
 		void remove(NioConnection con)
 		{
 			connections.remove(con);
-		}
-	}
-
-	/**
-	 * This class is the default serializer factory which is used if the
-	 * serializer factory is null. It uses the Line serializer which will pass
-	 * through the packets as being line based.
-	 */
-	static class DefaultSerializerFactory implements NioObjectFactory<NioSerializer>
-	{
-
-		//The charset used is the default platform charset
-		private static final Map<String, ? extends Object> config = Collections.singletonMap("charset", Charset.defaultCharset().name());
-
-		/**
-		 * Creates a new instance of the LineSerializer
-		 *
-		 * @return a new instance of the LineSerializer
-		 *
-		 * @throws NioObjectCreationException this should never occur
-		 */
-		@Override
-		public NioSerializer create() throws NioObjectCreationException
-		{
-			try
-			{
-				//Make a new serializer and configure it
-				LineSerializer serializer = new LineSerializer();
-				serializer.configure(config);
-				return serializer;
-			}
-			catch (Exception ex)
-			{
-				throw new NioObjectCreationException(ex);
-			}
-		}
-
-		/**
-		 * This checks if the object is a LineSerializer using the default
-		 * charset as the config
-		 *
-		 * @param obj the object to test
-		 *
-		 * @return if the object could have been made by this factory
-		 */
-		@Override
-		public boolean isInstance(NioSerializer obj)
-		{
-			return LineSerializer.class.equals(obj.getClass()) && config.equals(obj.getConfiguration());
-		}
-	}
-
-	/**
-	 * This class is the default Inspector factory which uses the Null inspector
-	 * (ignores all packets)
-	 */
-	static class DefaultInspectorFactory implements NioObjectFactory<NioInspector>
-	{
-		//There is no configuration for this class
-
-		private static final Map<String, Object> config = Collections.<String, Object>emptyMap();
-
-		/**
-		 * Creates a new NullInspector object
-		 *
-		 * @return a new NullInspector object
-		 *
-		 * @throws NioObjectCreationException should not happen
-		 */
-		@Override
-		public NioInspector create() throws NioObjectCreationException
-		{
-			try
-			{
-				//Create and configure our insepctor
-				NullInspector inspector = new NullInspector();
-				inspector.configure(config);
-				return inspector;
-			}
-			catch (Exception ex)
-			{
-				throw new NioObjectCreationException(ex);
-			}
-		}
-
-		/**
-		 * This checks if the object is a NullInspector with an empty config
-		 *
-		 * @param obj the object to test
-		 *
-		 * @return if the object could have been made by this factory
-		 */
-		@Override
-		public boolean isInstance(NioInspector obj)
-		{
-			return NullInspector.class.equals(obj.getClass()) && config.equals(obj.getConfiguration());
 		}
 	}
 }

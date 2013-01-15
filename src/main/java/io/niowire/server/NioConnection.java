@@ -103,7 +103,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 			inspect.setContext(context);
 
 			//Create all our services
-			for (NioObjectFactory<NioService> factory : SERVER_CONFIG.getServiceFactories())
+			for (NioObjectFactory<? extends NioService> factory : SERVER_CONFIG.getServiceFactories())
 			{
 				try
 				{
@@ -376,13 +376,13 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 			}
 
 			//Make new lists we can manipulate that hold our objects
-			LinkedList<NioObjectFactory<NioService>> newServices = new LinkedList<NioObjectFactory<NioService>>(SERVER_CONFIG.getServiceFactories());
+			LinkedList<NioObjectFactory<? extends NioService>> newServices = new LinkedList<NioObjectFactory<? extends NioService>>(SERVER_CONFIG.getServiceFactories());
 			servicesToRemove = new LinkedList<NioService>(services);
 
 			//Loop through the factories and the services and try to match them up
-			for (Iterator<NioObjectFactory<NioService>> fit = newServices.iterator(); fit.hasNext();)
+			for (Iterator<NioObjectFactory<? extends NioService>> fit = newServices.iterator(); fit.hasNext();)
 			{
-				NioObjectFactory<NioService> factory = fit.next();
+				NioObjectFactory<? extends NioService> factory = fit.next();
 
 				//Loop thorough the services
 				for (Iterator<NioService> sit = servicesToRemove.iterator(); sit.hasNext();)
@@ -399,7 +399,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 			}
 
 			//Add any new services
-			for (NioObjectFactory<NioService> factory : newServices)
+			for (NioObjectFactory<? extends NioService> factory : newServices)
 			{
 				NioService service = factory.create();
 				service.setContext(context);

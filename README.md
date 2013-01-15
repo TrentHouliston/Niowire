@@ -5,14 +5,8 @@ Below is a very simple example which configures a single server on port 12345 wh
 To implement your own server, you need a Serializer, an Inspector, and one or more services. You can either write these yourself or use one of the built in ones.
 
 ```
-//Add in a serializer
-NioObjectFactory<NioSerializer> serializer = new ReflectiveNioObjectFactory(LineSerializer.class, Collections.singletonMap("charset", "utf-8"));
-
-//Add in an inspector
-NioObjectFactory<NioInspector> inspector = new ReflectiveNioObjectFactory(TimeoutInspector.class, Collections.singletonMap("timeout", 3000));
-
-//Add in a service (or two)
-NioObjectFactory<NioService> service = new ReflectiveNioObjectFactory(EchoService.class, Collections.<String, Object>emptyMap());
+//Make a service
+NioObjectFactory<NioService> service = new ReflectiveNioObjectFactory(EchoService.class);
 
 //Create a server definition
 NioServerDefinition def = new NioServerDefinition();
@@ -46,7 +40,15 @@ Niowire is built upon a modular design so that each of the components which are 
 One of the awesome features of Niowire is that you can perform live reconfiguration of any of the servers without losing a connection. You can change your serializer, inspector, or add and remove services and the existing connections will adjust to the new state. You can even change the port that your server is listening on and the existing connections will still be maintained. This is ideal for the requirements of high availability servers.
 ####Example
 ```
-codez
+NioServerDefinition def;
+NioSocketServer server = new NioSocketServer();
+server.add(def);
+
+... some time later ... 
+
+def.setSerializer(anotherSerializer);
+server.update(def);
+
 ```
 ##Server Sources
 ###Built in Server Sources
@@ -119,9 +121,10 @@ codez
 *Coming in a future version*
 
 ##Future Versions
-The following changes are coming in future versions, Note that the API for Niowire is not considered stable yet and may change at any time
+The following changes are coming in future versions, Note that the API for Niowire is not considered stable yet and may change at any time (although the changes should become more and more minor and will be considered stable by 1.0)
 
-- Moving to an annotations based configuration and context injection (rather then throught the interface)
+- Moving to an annotations based configuration and context injection (rather then throught the interface) this means that rather then passing in a configuration object, the properties will be set directly by examining the incoming map and mapping the keys to fields using annotations. The context object will also be injected (removing the need for setContext)
+- Changing the API to support a "Delayed Update" (updating services inspectors etc when they say they are ready to be updated)
 - Implementing a SSL socket wrapper
 - Implementing a Split Serializer (allows deserializing using one method, and serialization using another)
 - Implementing a GZIP Serializer (compresses/decompresses the data coming in/out)
