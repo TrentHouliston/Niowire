@@ -23,17 +23,18 @@ import java.nio.channels.ClosedChannelException;
 import java.util.Map;
 
 /**
- * This class is an inspector which does not do anything with the incoming data
- * and never times out. It uses the IP/Port of the remote socket to build its
- * UID.
+ * This is a simple Inspector which will timeout after a message has not been
+ * received for the amount of time that it was configured with
  *
  * @author Trent Houliston
  */
-public class NullInspector implements NioInspector
+public class TimeoutInspector implements NioInspector
 {
 
 	//Our context
 	private Context context = null;
+	private long lastMessage = System.currentTimeMillis();
+	private long timeout;
 	private boolean open = true;
 	private Map<String, ? extends Object> configuration;
 
@@ -65,6 +66,7 @@ public class NullInspector implements NioInspector
 		{
 			throw new ClosedChannelException();
 		}
+		lastMessage = System.currentTimeMillis();
 		return line;
 	}
 
@@ -77,7 +79,7 @@ public class NullInspector implements NioInspector
 	public boolean timeout()
 	{
 		//Timeout when the inspector is closed
-		return !open;
+		return !open || ((timeout > 0) && (System.currentTimeMillis() - lastMessage > timeout));
 	}
 
 	/**
@@ -95,6 +97,7 @@ public class NullInspector implements NioInspector
 	@Override
 	public void configure(Map<String, ? extends Object> configuration) throws Exception
 	{
+		timeout = ((Number) configuration.get("timeout")).longValue();
 		this.configuration = configuration;
 	}
 

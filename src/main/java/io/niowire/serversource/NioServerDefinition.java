@@ -39,9 +39,9 @@ public class NioServerDefinition
 	protected String name;
 	//Box the port so it can be null (grab any free port)
 	protected Integer port;
-	protected NioObjectFactory<NioSerializer> serializerFactory;
-	protected NioObjectFactory<NioInspector> inspectorFactory;
-	protected List<NioObjectFactory<NioService>> serviceFactories;
+	protected NioObjectFactory<? extends NioSerializer> serializerFactory;
+	protected NioObjectFactory<? extends NioInspector> inspectorFactory;
+	protected List<NioObjectFactory<? extends NioService>> serviceFactories;
 
 	/**
 	 * Gets the ID (unique identifier) for this server
@@ -108,7 +108,7 @@ public class NioServerDefinition
 	 *
 	 * @return the serializerFactory
 	 */
-	public NioObjectFactory<NioSerializer> getSerializerFactory()
+	public NioObjectFactory<? extends NioSerializer> getSerializerFactory()
 	{
 		return serializerFactory;
 	}
@@ -118,7 +118,7 @@ public class NioServerDefinition
 	 *
 	 * @param serializerFactory the serializerFactory to set
 	 */
-	public void setSerializerFactory(NioObjectFactory<NioSerializer> serializerFactory)
+	public void setSerializerFactory(NioObjectFactory<? extends NioSerializer> serializerFactory)
 	{
 		this.serializerFactory = serializerFactory;
 	}
@@ -128,7 +128,7 @@ public class NioServerDefinition
 	 *
 	 * @return the inspectorFactory
 	 */
-	public NioObjectFactory<NioInspector> getInspectorFactory()
+	public NioObjectFactory<? extends NioInspector> getInspectorFactory()
 	{
 		return inspectorFactory;
 	}
@@ -138,7 +138,7 @@ public class NioServerDefinition
 	 *
 	 * @param inspectorFactory the inspectorFactory to set
 	 */
-	public void setInspectorFactory(NioObjectFactory<NioInspector> inspectorFactory)
+	public void setInspectorFactory(NioObjectFactory<? extends NioInspector> inspectorFactory)
 	{
 		this.inspectorFactory = inspectorFactory;
 	}
@@ -148,7 +148,7 @@ public class NioServerDefinition
 	 *
 	 * @return the serviceFactories
 	 */
-	public List<NioObjectFactory<NioService>> getServiceFactories()
+	public List<NioObjectFactory<? extends NioService>> getServiceFactories()
 	{
 		//Make it unmodifiable
 		return Collections.unmodifiableList(serviceFactories);
@@ -159,9 +159,9 @@ public class NioServerDefinition
 	 *
 	 * @param serviceFactories the serviceFactories to set
 	 */
-	public void setServiceFactories(List<? extends NioObjectFactory<NioService>> serviceFactories)
+	public void setServiceFactories(List<? extends NioObjectFactory<? extends NioService>> serviceFactories)
 	{
 		//Wrap it so that nobody else has access to our shared state
-		this.serviceFactories = new LinkedList<NioObjectFactory<NioService>>(serviceFactories);
+		this.serviceFactories = new LinkedList<NioObjectFactory<? extends NioService>>(serviceFactories);
 	}
 }

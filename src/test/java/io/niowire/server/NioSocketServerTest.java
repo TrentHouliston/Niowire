@@ -20,12 +20,10 @@ import io.niowire.data.NioPacket;
 import io.niowire.entities.NioObjectCreationException;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.inspection.NioInspector;
-import io.niowire.inspection.NullInspector;
+import io.niowire.inspection.TimeoutInspector;
 import io.niowire.serializer.LineSerializer;
 import io.niowire.serializer.NioSerializer;
 import io.niowire.server.NioConnection.Context;
-import io.niowire.server.NioSocketServer.DefaultInspectorFactory;
-import io.niowire.server.NioSocketServer.DefaultSerializerFactory;
 import io.niowire.serversource.Event;
 import io.niowire.serversource.NioServerDefinition;
 import io.niowire.serversource.NioServerSource;
@@ -39,7 +37,6 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -954,12 +951,12 @@ public class NioSocketServerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test(timeout = 1000)
+	@Test(timeout = 10000000)
 	public void testDefaultFactories() throws Exception
 	{
 		//Get the factories
-		DefaultSerializerFactory defaultSerializer = new DefaultSerializerFactory();
-		DefaultInspectorFactory defaultInspector = new DefaultInspectorFactory();
+		NioObjectFactory<? extends NioSerializer> defaultSerializer = NioSocketServer.DEFAULT_SERIALIZER;
+		NioObjectFactory<? extends NioInspector> defaultInspector = NioSocketServer.DEFAULT_INSPECTOR;
 
 		//Create a serializer and inspector
 		NioSerializer serialize = defaultSerializer.create();
@@ -972,11 +969,11 @@ public class NioSocketServerTest
 		//Check that they recognize other objects of the same type
 		LineSerializer lineSerializer = new LineSerializer();
 		lineSerializer.configure(Collections.singletonMap("charset", Charset.defaultCharset().name()));
-		NullInspector nullInspector = new NullInspector();
-		nullInspector.configure(Collections.<String, Object>emptyMap());
+		TimeoutInspector timeoutInspector = new TimeoutInspector();
+		timeoutInspector.configure(Collections.singletonMap("timeout", -1));
 
 		assertTrue(defaultSerializer.isInstance(lineSerializer));
-		assertTrue(defaultInspector.isInstance(nullInspector));
+		assertTrue(defaultInspector.isInstance(timeoutInspector));
 	}
 
 	/**
