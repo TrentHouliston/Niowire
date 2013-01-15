@@ -51,8 +51,8 @@ public class DirectoryServerSourceTest
 
 		//Create a temporary directory
 		File tmpdir = File.createTempFile("DirectoryServerSourceTest", "");
-		tmpdir.delete();
-		tmpdir.mkdir();
+		assertTrue(tmpdir.delete());
+		assertTrue(tmpdir.mkdir());
 
 		//Make sure it's a file
 		assertTrue(tmpdir.isDirectory());
@@ -99,6 +99,9 @@ public class DirectoryServerSourceTest
 	{
 		//Create our DirectoryServerSource object
 		DirectoryServerSource source = new DirectoryServerSource();
+
+		//Assert false for code coverage (so we can check if it changes)
+		assertFalse(source.isBlocking());
 
 		//Use our temporary directory as our source
 		source.configure(Collections.singletonMap("directory", tempDir.getAbsolutePath()));

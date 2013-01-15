@@ -35,13 +35,13 @@ public class NioServerDefinition
 {
 
 	//Our variables
-	private String id;
-	private String name;
+	protected String id;
+	protected String name;
 	//Box the port so it can be null (grab any free port)
-	private Integer port;
-	private NioObjectFactory<NioSerializer> serializerFactory;
-	private NioObjectFactory<NioInspector> inspectorFactory;
-	private List<NioObjectFactory<NioService>> serviceFactories;
+	protected Integer port;
+	protected NioObjectFactory<NioSerializer> serializerFactory;
+	protected NioObjectFactory<NioInspector> inspectorFactory;
+	protected List<NioObjectFactory<NioService>> serviceFactories;
 
 	/**
 	 * Gets the ID (unique identifier) for this server

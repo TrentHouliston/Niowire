@@ -26,7 +26,9 @@ import io.niowire.serializer.NioSerializer;
 import io.niowire.server.NioConnection.Context;
 import io.niowire.server.NioSocketServer.DefaultInspectorFactory;
 import io.niowire.server.NioSocketServer.DefaultSerializerFactory;
+import io.niowire.serversource.Event;
 import io.niowire.serversource.NioServerDefinition;
+import io.niowire.serversource.NioServerSource;
 import io.niowire.service.NioService;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -37,6 +39,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -111,7 +114,7 @@ public class NioSocketServerTest
 		def.setServiceFactories(Collections.singletonList(serviceFactory));
 
 		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server);
+		Thread t = new Thread(server.LIVEWIRE_GROUP, server);
 		t.setDaemon(true);
 		t.start();
 
@@ -284,7 +287,7 @@ public class NioSocketServerTest
 		defs[2].setServiceFactories(Collections.singletonList(serviceFactories[2][0]));
 
 		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server);
+		Thread t = new Thread(server.LIVEWIRE_GROUP, server);
 		t.setDaemon(true);
 		t.start();
 
@@ -671,7 +674,7 @@ public class NioSocketServerTest
 		def.setServiceFactories(Collections.singletonList((NioObjectFactory<NioService>) factory));
 
 		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server);
+		Thread t = new Thread(server.LIVEWIRE_GROUP, server);
 		t.setDaemon(true);
 		t.start();
 
@@ -737,7 +740,7 @@ public class NioSocketServerTest
 		def.setServiceFactories(Collections.singletonList(serviceFactory));
 
 		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server);
+		Thread t = new Thread(server.LIVEWIRE_GROUP, server);
 		t.setDaemon(true);
 		t.start();
 
@@ -795,7 +798,7 @@ public class NioSocketServerTest
 		def.setServiceFactories(Collections.singletonList(serviceFactory));
 
 		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server);
+		Thread t = new Thread(server.LIVEWIRE_GROUP, server);
 		t.setDaemon(true);
 		t.start();
 		//</editor-fold>
@@ -829,11 +832,130 @@ public class NioSocketServerTest
 	}
 
 	/**
+	 * Tests that the server handles ServerSources correctly
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testServerSources() throws Exception
+	{
+		//<editor-fold defaultstate="collapsed" desc="Setup Server and Mocking">
+		//Create our definition
+		final NioServerDefinition def;
+		final Object lock = new Object();
+		List<NioServerDefinition> servers;
+		int serverPort;
+
+		//Mock our server source
+		NioServerSource source = mock(NioServerSource.class);
+
+		NioSerializer serializer = mock(NioSerializer.class);
+		NioInspector inspector = mock(NioInspector.class);
+		NioService service = mock(NioService.class);
+
+		NioObjectFactory<NioSerializer> serializerFactory = mockNioObjectFactory(serializer);
+		NioObjectFactory<NioInspector> inspectorFactory = mockNioObjectFactory(inspector);
+		NioObjectFactory<NioService> serviceFactory = mockNioObjectFactory(service);
+
+		//Build our first definition
+		def = new NioServerDefinition();
+		def.setId(DEFAULT_SERVER_ID);
+		def.setName(DEFAULT_SERVER_NAME);
+		def.setPort(null);
+		def.setSerializerFactory(serializerFactory);
+		def.setInspectorFactory(inspectorFactory);
+		def.setServiceFactories(Collections.singletonList(serviceFactory));
+
+		//Mock our source methods //return add update then remove (then empty sets)
+		when(source.getChanges()).thenReturn(Collections.singletonMap(def, Event.SERVER_ADD),
+											 Collections.singletonMap(def, Event.SERVER_UPDATE),
+											 Collections.singletonMap(def, Event.SERVER_REMOVE),
+											 Collections.<NioServerDefinition, Event>emptyMap());
+
+		//This is a blocking server (we wait on the definition object)
+		when(source.isBlocking()).then(new Answer<Boolean>() {
+
+			@Override
+			public Boolean answer(InvocationOnMock invocation) throws Throwable
+			{
+				//Wait for the lock to be fired
+				synchronized(lock)
+				{
+					lock.wait();
+				}
+
+				return true;
+			}
+
+		});
+
+		//Create our server
+		NioSocketServer server = new NioSocketServer(source);
+
+		//Create a thread to run the socket server in and start it
+		Thread t = new Thread(server.LIVEWIRE_GROUP, server);
+		t.setDaemon(true);
+		t.start();
+		//</editor-fold>
+
+		//<editor-fold defaultstate="collapsed" desc="Verify that server source used correctly">
+		//Inject the first definition
+		synchronized (lock)
+		{
+			lock.notify();
+		}
+
+		//Wait for a check to isBlocking (this is bad, using implemenation details fix it sometime)
+		verify(source, timeout(100)).isBlocking();
+
+		//Get the servers
+		servers = server.getServers();
+
+		//Check our server exists
+		assertFalse("The server should have been added", servers.isEmpty());
+		assertEquals("The server should have the default name", DEFAULT_SERVER_NAME, servers.get(0).getName());
+
+		//Inject the second definition (update) and update the name
+		synchronized (lock)
+		{
+			def.setName(DEFAULT_SERVER_NAME + "1");
+			lock.notify();
+		}
+
+		//Wait for a check to isBlocking (this is bad, using implemenation details fix it sometime)
+		verify(source, timeout(100).times(2)).isBlocking();
+
+		//Get the servers
+		servers = server.getServers();
+
+		//Check our server exists
+		assertFalse("The server should still exist", servers.isEmpty());
+		assertEquals("The server should have the default name with a 1", DEFAULT_SERVER_NAME + "1", servers.get(0).getName());
+
+		//Inject the third definition (remove)
+		synchronized (lock)
+		{
+			lock.notify();
+		}
+
+		//Wait for a check to isBlocking (this is bad, using implemenation details fix it sometime)
+		verify(source, timeout(100).times(3)).isBlocking();
+
+		//Get the servers
+		servers = server.getServers();
+
+		//Check our server no longer exists
+		assertTrue("The server should have been removed", servers.isEmpty());
+		//</editor-fold>
+	}
+
+	/**
 	 * Tests the default factories to make sure that they behave as expected
 	 *
 	 * @throws Exception
 	 */
-	@Test(timeout = 1000) public void testDefaultFactories() throws Exception
+	@Test(timeout = 1000)
+	public void testDefaultFactories() throws Exception
 	{
 		//Get the factories
 		DefaultSerializerFactory defaultSerializer = new DefaultSerializerFactory();

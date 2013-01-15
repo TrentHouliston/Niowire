@@ -123,7 +123,7 @@ public class NioSocketServer implements Runnable
 		{
 			//Create a new SourceRunner with the passed source
 			this.sourceRunner = new SourceRunner(source);
-			this.sourceRunnerThread = new Thread(this.sourceRunner);
+			this.sourceRunnerThread = new Thread(LIVEWIRE_GROUP, this.sourceRunner, "SourceRunner");
 			this.sourceRunnerThread.setDaemon(true);
 		}
 		else
@@ -413,8 +413,10 @@ public class NioSocketServer implements Runnable
 		//Put ourselves in our list of active servers
 		servers.put(server.getId(), key);
 
-		//Return the port we bound to
-		return serv.socket().getLocalPort();
+		//Set and return the port we bound to
+		int port = serv.socket().getLocalPort();
+		server.setPort(port);
+		return port;
 	}
 
 	/**
@@ -488,14 +490,38 @@ public class NioSocketServer implements Runnable
 			//Close the old channel
 			key.channel().close();
 
-			//Return the new port
-			return serv.socket().getLocalPort();
+			//Set and return the new port
+			int port = serv.socket().getLocalPort();
+			server.setPort(port);
+			return port;
 		}
 		else
 		{
 			//Return the existing port
 			return ((ServerSocketChannel) key.channel()).socket().getLocalPort();
 		}
+	}
+
+	/**
+	 * Gets the list of active servers which are currently in the system with
+	 * their actual implementations
+	 *
+	 * @return the servers which are active in the system
+	 */
+	public List<NioServerDefinition> getServers()
+	{
+		//Create a list to hold the results
+		LinkedList<NioServerDefinition> list = new LinkedList<NioServerDefinition>();
+
+		//Get all of our servers
+		for (SelectionKey key : servers.values())
+		{
+			list.add((NioServerDefinition) key.attachment());
+		}
+
+		//Return an unmodifyable view of them
+		return Collections.unmodifiableList(list);
+
 	}
 
 	/**
@@ -640,16 +666,11 @@ public class NioSocketServer implements Runnable
 	 * that changing a server definition object does not alter our active state
 	 * (as updating it could cause issues if we don't know about it)
 	 */
-	public static class ActiveServer
+	public static class ActiveServer extends NioServerDefinition
 	{
 
 		//Data for this server
-		private final String id;
-		private String name;
-		private Integer port;
-		private NioObjectFactory<NioSerializer> serializerFactory;
-		private NioObjectFactory<NioInspector> inspectorFactory;
-		private List<NioObjectFactory<NioService>> serviceFactories;
+		private Integer activePort;
 		//Connections made to this server
 		private transient List<NioConnection> connections = new LinkedList<NioConnection>();
 
@@ -678,7 +699,7 @@ public class NioSocketServer implements Runnable
 		 *               server)
 		 *
 		 */
-		public boolean update(NioServerDefinition def)
+		protected boolean update(NioServerDefinition def)
 		{
 			//Work out if our port needs to be updated, we update in the following cases
 			//Our port is null and theirs is not
@@ -710,72 +731,68 @@ public class NioSocketServer implements Runnable
 		 */
 		private void setPort(int port)
 		{
-			this.port = port;
+			this.activePort = port;
 		}
 
 		/**
-		 * Gets the ID of this active server
+		 * Disables setting of the ID on an active server
 		 *
-		 * @return the id
+		 * @param id the ID
 		 */
-		public String getId()
+		@Override
+		public void setId(String id)
 		{
-			return id;
+			throw new UnsupportedOperationException("Cannot set the ID on an active server");
 		}
 
 		/**
-		 * Gets the name of this active server
-		 *
-		 * @return the name
-		 */
-		public String getName()
-		{
-			return name;
-		}
-
-		/**
-		 * Gets the port of this active server
+		 * Gets the port of this active server (the port that is actually in
+		 * use)
 		 *
 		 * @return the port
 		 */
+		@Override
 		public Integer getPort()
 		{
-			return port;
+			return port != null ? port : activePort;
 		}
 
 		/**
 		 * Gets the serializer factory for connections to this server
 		 *
-		 * @return the serializerFactory
+		 * @param factory the factory
 		 */
-		public NioObjectFactory<NioSerializer> getSerializerFactory()
+		@Override
+		public void setSerializerFactory(NioObjectFactory<NioSerializer> factory)
 		{
-			return serializerFactory;
+			throw new UnsupportedOperationException("Cannot change a factory on an active server, Update instead");
 		}
 
 		/**
-		 * Gets the inspector factory to connections to this server
+		 * Disables setting of the InspectorFactory
 		 *
-		 * @return the inspectorFactory
+		 * @param factory the inspectorFactory
 		 */
-		public NioObjectFactory<NioInspector> getInspectorFactory()
+		@Override
+		public void setInspectorFactory(NioObjectFactory<NioInspector> factory)
 		{
-			return inspectorFactory;
+			throw new UnsupportedOperationException("Cannot change a factory on an active server, Update instead");
 		}
 
 		/**
-		 * Gets the list of service factories to this server
+		 * Disables setting of the ServiceFactories
 		 *
-		 * @return the serviceFactories
+		 * @param factory the serviceFactories
 		 */
-		public List<NioObjectFactory<NioService>> getServiceFactories()
+		@Override
+		public void setServiceFactories(List<? extends NioObjectFactory<NioService>> factory)
 		{
-			return Collections.unmodifiableList(serviceFactories);
+			throw new UnsupportedOperationException("Cannot change a factory on an active server, Update instead");
 		}
 
 		/**
 		 * Removes the passed connection from this server's list of active
-		 * connections
+		 * connections (should only be accessed by a NioConnection
 		 *
 		 * @param con the connection to remove
 		 */
