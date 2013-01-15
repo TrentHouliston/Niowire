@@ -37,7 +37,7 @@ public class ReflectiveNioObjectFactoryTest
 	 * @throws Exception
 	 */
 	@Test(timeout = 1000)
-	public void testObjectCreation() throws Exception
+	public void testObjectCreationFromString() throws Exception
 	{
 		//Build a new factory
 		ReflectiveNioObjectFactory<NioObjectImpl> factory = new ReflectiveNioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.<String, NioObject>emptyMap());
@@ -47,6 +47,25 @@ public class ReflectiveNioObjectFactoryTest
 
 		//Check the class is correct
 		assertEquals("The class of this object should be the class that was passed in", Class.forName(NioObjectImpl.class.getName()), obj.getClass());
+	}
+
+	/**
+	 * Test that objects can be created from their class object and a
+	 * configuration
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testObjectCreationFromClass() throws Exception
+	{
+		//Build a new factory
+		ReflectiveNioObjectFactory<NioObjectImpl> factory = new ReflectiveNioObjectFactory<NioObjectImpl>(NioObjectImpl.class, Collections.<String, NioObject>emptyMap());
+
+		//Try to create an object
+		NioObjectImpl obj = factory.create();
+
+		//Check the class is correct
+		assertEquals("The class of this object should be the class that was passed in", NioObjectImpl.class, obj.getClass());
 	}
 
 	/**

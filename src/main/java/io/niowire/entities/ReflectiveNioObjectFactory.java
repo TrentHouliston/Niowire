@@ -32,7 +32,7 @@ public class ReflectiveNioObjectFactory<T extends NioObject> implements NioObjec
 {
 
 	private final Class<?> clazz;
-	private final Map<String, Object> configuration;
+	private final Map<String, ? extends Object> configuration;
 
 	/**
 	 * This constructs a new Object factory using the passed class name and the
@@ -51,6 +51,22 @@ public class ReflectiveNioObjectFactory<T extends NioObject> implements NioObjec
 
 		//Get the class object
 		clazz = Class.forName(className);
+	}
+
+	/**
+	 * This constructs a new object factory using the passed class and the
+	 * configuration object
+	 *
+	 * @param clazz         the class of the object to create
+	 * @param configuration the configuration of the object to create
+	 */
+	public ReflectiveNioObjectFactory(Class<T> clazz, Map<String, ? extends Object> configuration)
+	{
+		//Store our configuration in an unmodifyable way
+		this.configuration = Collections.unmodifiableMap(configuration);
+
+		//Store our class
+		this.clazz = clazz;
 	}
 
 	/**

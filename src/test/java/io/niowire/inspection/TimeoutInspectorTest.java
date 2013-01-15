@@ -27,11 +27,11 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for the {@link NullInspector}
+ * Unit tests for the {@link TimeoutInspector}
  *
  * @author Trent Houliston
  */
-public class NullInspectorTest
+public class TimeoutInspectorTest
 {
 
 	/**
@@ -42,12 +42,12 @@ public class NullInspectorTest
 	@Test(timeout = 1000)
 	public void testGetUid() throws Exception
 	{
-		//Build our NullInspector
-		NullInspector inspect = new NullInspector();
-		inspect.configure(Collections.<String, Object>emptyMap());
+		//Build our TimeoutInspector
+		TimeoutInspector inspect = new TimeoutInspector();
+		inspect.configure(Collections.singletonMap("timeout", 1000));
 
 		//Small check for the getConfiguration method
-		assertEquals("The inspector needs to return the exact object it was created with", Collections.<String, Object>emptyMap(), inspect.getConfiguration());
+		assertEquals("The inspector needs to return the exact object it was created with", Collections.singletonMap("timeout", 1000), inspect.getConfiguration());
 
 		//Mock a remote address in the context
 		NioConnection.Context context = mock(NioConnection.Context.class);
@@ -70,14 +70,37 @@ public class NullInspectorTest
 	{
 		//Test that we do nothing with the results
 		//Build our NullInspector
-		NullInspector inspect = new NullInspector();
-		inspect.configure(Collections.<String, Object>emptyMap());
+		TimeoutInspector inspect = new TimeoutInspector();
+		inspect.configure(Collections.singletonMap("timeout", 1000));
 
 		//Build a packet
 		NioPacket packet = new NioPacket("TEST", "TEST");
 
 		//Make sure it was returned
 		assertEquals("There should be no change in the packets", packet, inspect.inspect(packet));
+	}
+
+	/**
+	 * Test that the timeout behaves as expected
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testTimeout() throws Exception
+	{
+		//Build our NullInspector with 100ms timeout
+		TimeoutInspector inspect = new TimeoutInspector();
+		inspect.configure(Collections.singletonMap("timeout", 100));
+
+		//Check that we won't timeout (if this takes more then 100ms it deserves to fail)
+		assertFalse(inspect.timeout());
+
+		//Wait 110ms (so we should timeout)
+		Thread.sleep(110);
+
+		//Make sure we now timeout
+		assertTrue(inspect.timeout());
+
 	}
 
 	/**
@@ -90,8 +113,8 @@ public class NullInspectorTest
 	public void testClose() throws Exception
 	{
 		//Create a new inspector
-		NullInspector inspect = new NullInspector();
-		inspect.configure(Collections.<String, Object>emptyMap());
+		TimeoutInspector inspect = new TimeoutInspector();
+		inspect.configure(Collections.singletonMap("timeout", 1000));
 
 		//Mock a remote address in the context
 		NioConnection.Context context = mock(NioConnection.Context.class);

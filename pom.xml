@@ -110,7 +110,6 @@
 		</dependency>
 	</dependencies>
 
-
 	<build>
 		<plugins>
 			<!-- Compiler plugin, compiles java files -->
