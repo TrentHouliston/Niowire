@@ -1,0 +1,9 @@
+{
+	"logFile" : "niowire.log",
+	"serverSource" : {
+		"className" : "io.niowire.serversource.DirectoryServerSource",
+		"configuration" : {
+			"directory" : "servers"
+		}
+	}
+}
