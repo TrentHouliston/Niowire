@@ -17,10 +17,9 @@
 package io.niowire.server;
 
 import io.niowire.NiowireException;
-import io.niowire.entities.NioObjectCreationException;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.inspection.NioInspector;
-import io.niowire.inspection.NullInspector;
+import io.niowire.inspection.TimeoutInspector;
 import io.niowire.serializer.LineSerializer;
 import io.niowire.serializer.NioSerializer;
 import io.niowire.serversource.Event;
@@ -56,7 +55,7 @@ public class NioSocketServer implements Runnable
 	//The default Serializer
 	static final NioObjectFactory<LineSerializer> DEFAULT_SERIALIZER = new NioObjectFactory<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", Charset.defaultCharset().name()));
 	//The default inspector
-	static final NioObjectFactory<NullInspector> DEFAULT_INSPECTOR = new NioObjectFactory<NullInspector>(NullInspector.class);
+	static final NioObjectFactory<TimeoutInspector> DEFAULT_INSPECTOR = new NioObjectFactory<TimeoutInspector>(TimeoutInspector.class, Collections.singletonMap("timeout", -1));
 	//Our thread group
 	public final ThreadGroup LIVEWIRE_GROUP = new ThreadGroup("Livewire");
 	//The selector picking which socket to do next

@@ -66,6 +66,7 @@ public class TimeoutInspector implements NioInspector
 		{
 			throw new ClosedChannelException();
 		}
+		lastMessage = System.currentTimeMillis();
 		return line;
 	}
 
@@ -78,7 +79,7 @@ public class TimeoutInspector implements NioInspector
 	public boolean timeout()
 	{
 		//Timeout when the inspector is closed
-		return !open || (System.currentTimeMillis() - lastMessage > timeout);
+		return !open || ((timeout > 0) && (System.currentTimeMillis() - lastMessage > timeout));
 	}
 
 	/**

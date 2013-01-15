@@ -98,9 +98,33 @@ public class TimeoutInspectorTest
 		//Wait 110ms (so we should timeout)
 		Thread.sleep(110);
 
-		//Make sure we now timeout
-		assertTrue(inspect.timeout());
+		//Write a packet
+		inspect.inspect(null);
 
+		//Make sure we don't timeout
+		assertFalse(inspect.timeout());
+
+		//Wait 110ms (so we should timeout)
+		Thread.sleep(110);
+
+		//Make sure we timeout
+		assertTrue(inspect.timeout());
+	}
+
+	/**
+	 * Test that the timeout behaves as expected
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testInfiniteTimeout() throws Exception
+	{
+		//Build our NullInspector with 100ms timeout
+		TimeoutInspector inspect = new TimeoutInspector();
+		inspect.configure(Collections.singletonMap("timeout", -1));
+
+		//Check that we won't timeout (if this takes more then 100ms it deserves to fail)
+		assertFalse(inspect.timeout());
 	}
 
 	/**
