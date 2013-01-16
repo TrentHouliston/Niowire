@@ -17,6 +17,7 @@
 package io.niowire.inspection;
 
 import io.niowire.data.NioPacket;
+import io.niowire.entities.NioObjectFactory;
 import io.niowire.server.NioConnection;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -44,17 +45,17 @@ public class TimeoutInspectorTest
 	{
 		//Build our TimeoutInspector
 		TimeoutInspector inspect = new TimeoutInspector();
-		inspect.configure(Collections.singletonMap("timeout", 1000));
 
-		//Small check for the getConfiguration method
-		assertEquals("The inspector needs to return the exact object it was created with", Collections.singletonMap("timeout", 1000), inspect.getConfiguration());
+		//Push through a configuration
+		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(inspect.getClass(), Collections.singletonMap("timeout", 1000));
+		injector.inject(inspect);
 
 		//Mock a remote address in the context
 		NioConnection.Context context = mock(NioConnection.Context.class);
 		when(context.getRemoteAddress()).thenReturn(new InetSocketAddress("171.205.239.171", 52719));
 
 		//Put this mocked context in
-		inspect.setContext(context);
+		NioConnection.injectContext(inspect, context);
 
 		//Make sure that the inspector gets the address from the context and uses it appropropriatly
 		assertEquals("We did not get the expected UID", "ABCDEFABCDEF", inspect.getUid());
@@ -71,7 +72,10 @@ public class TimeoutInspectorTest
 		//Test that we do nothing with the results
 		//Build our NullInspector
 		TimeoutInspector inspect = new TimeoutInspector();
-		inspect.configure(Collections.singletonMap("timeout", 1000));
+
+		//Push through a configuration
+		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(inspect.getClass(), Collections.singletonMap("timeout", 1000));
+		injector.inject(inspect);
 
 		//Build a packet
 		NioPacket packet = new NioPacket("TEST", "TEST");
@@ -90,7 +94,10 @@ public class TimeoutInspectorTest
 	{
 		//Build our NullInspector with 100ms timeout
 		TimeoutInspector inspect = new TimeoutInspector();
-		inspect.configure(Collections.singletonMap("timeout", 100));
+
+		//Push through a configuration
+		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(inspect.getClass(), Collections.singletonMap("timeout", 100));
+		injector.inject(inspect);
 
 		//Check that we won't timeout (if this takes more then 100ms it deserves to fail)
 		assertFalse(inspect.timeout());
@@ -121,7 +128,10 @@ public class TimeoutInspectorTest
 	{
 		//Build our NullInspector with 100ms timeout
 		TimeoutInspector inspect = new TimeoutInspector();
-		inspect.configure(Collections.singletonMap("timeout", -1));
+
+		//Push through a configuration
+		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(inspect.getClass(), Collections.singletonMap("timeout", -1));
+		injector.inject(inspect);
 
 		//Check that we won't timeout (if this takes more then 100ms it deserves to fail)
 		assertFalse(inspect.timeout());
@@ -138,14 +148,17 @@ public class TimeoutInspectorTest
 	{
 		//Create a new inspector
 		TimeoutInspector inspect = new TimeoutInspector();
-		inspect.configure(Collections.singletonMap("timeout", 1000));
+
+		//Push through a configuration
+		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(inspect.getClass(), Collections.singletonMap("timeout", 1000));
+		injector.inject(inspect);
 
 		//Mock a remote address in the context
 		NioConnection.Context context = mock(NioConnection.Context.class);
 		when(context.getRemoteAddress()).thenReturn(new InetSocketAddress("171.205.239.171", 52719));
 
-		//Set the context
-		inspect.setContext(context);
+		//Put this mocked context in
+		NioConnection.injectContext(inspect, context);
 
 		//Close it
 		inspect.close();

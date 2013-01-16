@@ -24,6 +24,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,7 @@ public abstract class DelimitedSerializer implements NioSerializer
 	//This buffer is allocated as needed if there is any leftover data (split packets)
 	private ByteBuffer residual = null;
 	private boolean open = true;
+	@Inject
 	protected Context context = null;
 	private Queue<ByteBuffer> sendQueue = new LinkedList<ByteBuffer>();
 	private ByteBuffer rebuffer = null;
@@ -286,15 +288,6 @@ public abstract class DelimitedSerializer implements NioSerializer
 	public boolean isOpen()
 	{
 		return open;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setContext(Context context)
-	{
-		this.context = context;
 	}
 
 	/**

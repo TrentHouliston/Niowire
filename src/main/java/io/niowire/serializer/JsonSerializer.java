@@ -21,6 +21,7 @@ import com.google.gson.GsonBuilder;
 import io.niowire.data.NioPacket;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import javax.inject.Inject;
 
 /**
  * This serializer expects each line to be a JSON object, which it will
@@ -34,10 +35,12 @@ public class JsonSerializer extends LineSerializer
 
 	//Our gson instance
 	Gson g = new GsonBuilder().disableHtmlEscaping().serializeNulls().create();
+	@Inject
+	private Class<?> pojoClass = null;
 
 	/**
-	 * Deserializes the passed string into a LinkedHashMap object treating the
-	 * input as a JSON object
+	 * Deserializes the passed string into a either a Pojo class if one is
+	 * provided, or into a LinkedHashMap
 	 *
 	 * @param str the string to use as the JSON object
 	 *
@@ -46,17 +49,25 @@ public class JsonSerializer extends LineSerializer
 	@Override
 	protected Object deserializeString(String str) throws NioInvalidDataException
 	{
-		//Work out if we are deserializing an array or object
-		switch (str.charAt(0))
+		//Check if we have a POJO to serialize into
+		if (pojoClass != null)
 		{
-			//For an array
-			case '[':
-				return g.fromJson(str, ArrayList.class);
-			//For an object (map)
-			case '{':
-				return g.fromJson(str, LinkedHashMap.class);
-			default:
-				throw new NioInvalidDataException();
+			return g.fromJson(str, pojoClass);
+		}
+		else
+		{
+			//Work out if we are deserializing an array or object
+			switch (str.charAt(0))
+			{
+				//For an array
+				case '[':
+					return g.fromJson(str, ArrayList.class);
+				//For an object (map)
+				case '{':
+					return g.fromJson(str, LinkedHashMap.class);
+				default:
+					throw new NioInvalidDataException();
+			}
 		}
 	}
 

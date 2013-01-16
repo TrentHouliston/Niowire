@@ -16,8 +16,10 @@
  */
 package io.niowire.serversource;
 
+import io.niowire.entities.NioObjectFactory;
 import java.io.File;
 import java.io.FileWriter;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Map;
@@ -104,10 +106,8 @@ public class DirectoryServerSourceTest
 		assertFalse(source.isBlocking());
 
 		//Use our temporary directory as our source
-		source.configure(Collections.singletonMap("directory", tempDir.getAbsolutePath()));
-
-		//Quick test to make sure that the configuration we get is exactly what we put in
-		assertEquals("The returned configuration should be what we put in", source.getConfiguration(), Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(source.getClass(), Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		injector.inject(source);
 
 		//Get the changes (should be all the servers)
 		Map<NioServerDefinition, Event> servers = source.getChanges();
@@ -163,7 +163,8 @@ public class DirectoryServerSourceTest
 		DirectoryServerSource source = new DirectoryServerSource();
 
 		//Use our temporary directory as our source
-		source.configure(Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(source.getClass(), Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		injector.inject(source);
 
 		//Check that 5 servers were returned
 		assertEquals("The wrong number of server definitions were returned", 5, source.getChanges().size());
@@ -220,7 +221,8 @@ public class DirectoryServerSourceTest
 		DirectoryServerSource source = new DirectoryServerSource();
 
 		//Use our temporary directory as our source
-		source.configure(Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(source.getClass(), Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		injector.inject(source);
 
 		//Check that 5 servers were returned
 		assertEquals("The wrong number of server definitions were returned", 5, source.getChanges().size());
@@ -275,7 +277,8 @@ public class DirectoryServerSourceTest
 		DirectoryServerSource source = new DirectoryServerSource();
 
 		//Use our temporary directory as our source
-		source.configure(Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(source.getClass(), Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		injector.inject(source);
 
 		//Check that 5 servers were returned
 		assertEquals("The wrong number of server definitions were returned", 5, source.getChanges().size());
@@ -330,6 +333,8 @@ public class DirectoryServerSourceTest
 	/**
 	 * This tests that when an invalid server definition is put into the
 	 * directory, it is ignored.
+	 *
+	 * @throws Exception
 	 */
 	@Test(timeout = 1000)
 	public void testInvalidServerDefinition() throws Exception
@@ -338,7 +343,8 @@ public class DirectoryServerSourceTest
 		DirectoryServerSource source = new DirectoryServerSource();
 
 		//Use our temporary directory as our source
-		source.configure(Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(source.getClass(), Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		injector.inject(source);
 
 		//Check that 5 servers were returned
 		assertEquals("The wrong number of server definitions were returned", 5, source.getChanges().size());

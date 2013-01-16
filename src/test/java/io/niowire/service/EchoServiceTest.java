@@ -64,17 +64,13 @@ public class EchoServiceTest
 
 		//Create and configure a new echo service
 		EchoService echo = new EchoService();
-		echo.configure(Collections.<String, Object>emptyMap());
-
-		//Quick test to make sure that the configuration we get is exactly what we put in
-		assertEquals("The returned configuration should be what we put in", echo.getConfiguration(), Collections.<String, Object>emptyMap());
 
 		//Mock a context
 		NioConnection.Context context = mock(NioConnection.Context.class);
 		when(context.getUid()).thenReturn("TEST");
 
 		//Set echo's context as this mocked object
-		echo.setContext(context);
+		NioConnection.injectContext(echo, context);
 
 		//Loop through our strings
 		for (NioPacket p : packets)
@@ -109,7 +105,7 @@ public class EchoServiceTest
 
 		EchoService service = new EchoService();
 
-		service.setContext(mock);
+		NioConnection.injectContext(service, mock);
 		service.send(new NioPacket("Test", "Test"));
 	}
 

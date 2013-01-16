@@ -17,8 +17,7 @@
 package io.niowire.serializer;
 
 import io.niowire.data.NioPacket;
-import io.niowire.entities.NioObject;
-import io.niowire.server.NioContextUser;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -36,7 +35,7 @@ import java.util.List;
  *
  * @author Trent Houliston
  */
-public interface NioSerializer extends NioObject, NioContextUser, ReadableByteChannel
+public interface NioSerializer extends Closeable, ReadableByteChannel
 {
 
 	/**

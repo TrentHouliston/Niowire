@@ -16,8 +16,8 @@
  */
 package io.niowire.serversource;
 
-import io.niowire.entities.NioObject;
 import io.niowire.server.NioSocketServer;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 
@@ -29,7 +29,7 @@ import java.util.Map;
  *
  * @author Trent Houliston
  */
-public interface NioServerSource extends NioObject
+public interface NioServerSource extends Closeable
 {
 
 	/**
@@ -40,8 +40,8 @@ public interface NioServerSource extends NioObject
 	 *
 	 * @throws IOException          if there is an IOException from the source
 	 *                                 of these servers
-	 * @throws InterruptedException if this is a blocking server source and the thread
-	 *                                 was interrupted
+	 * @throws InterruptedException if this is a blocking server source and the
+	 *                                 thread was interrupted
 	 */
 	public Map<NioServerDefinition, Event> getChanges() throws IOException, InterruptedException;
 

@@ -17,7 +17,6 @@
 package io.niowire.testutilities;
 
 import io.niowire.data.NioPacket;
-import io.niowire.entities.NioObject;
 import io.niowire.entities.NioObjectFactory;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -53,7 +52,7 @@ public class CreateCommonMocks
 	 *
 	 * @throws Exception
 	 */
-	public static <T extends NioObject> NioObjectFactory<T> mockNioObjectFactory(T object) throws Exception
+	public static <T> NioObjectFactory<T> mockNioObjectFactory(T object) throws Exception
 	{
 		@SuppressWarnings("unchecked")
 		NioObjectFactory<T> f = mock(NioObjectFactory.class);

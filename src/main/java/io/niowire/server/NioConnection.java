@@ -25,13 +25,13 @@ import io.niowire.serializer.NioSerializer;
 import io.niowire.serversource.NioServerDefinition;
 import io.niowire.service.NioService;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import javax.inject.Inject;
+import javax.inject.Named;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,10 +97,10 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 		{
 			//Create our serializer from the definition and pass in our context
 			serializer = SERVER_CONFIG.getSerializerFactory().create();
-			serializer.setContext(context);
+			injectContext(serializer, context);
 			//Create our inspector from the definition and pass in our context
 			inspect = SERVER_CONFIG.getInspectorFactory().create();
-			inspect.setContext(context);
+			injectContext(inspect, context);
 
 			//Create all our services
 			for (NioObjectFactory<? extends NioService> factory : SERVER_CONFIG.getServiceFactories())
@@ -110,7 +110,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 					//Create this service
 					NioService service = factory.create();
 					//Set the context to the service
-					service.setContext(context);
+					injectContext(service, context);
 					services.add(service);
 				}
 				catch (NioObjectCreationException ex)
@@ -365,14 +365,14 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 			if (!SERVER_CONFIG.getSerializerFactory().isInstance(serializer))
 			{
 				newSerializer = SERVER_CONFIG.getSerializerFactory().create();
-				newSerializer.setContext(context);
+				injectContext(newSerializer, context);
 			}
 
 			//Check and update the inspector if we need to
 			if (!SERVER_CONFIG.getInspectorFactory().isInstance(inspect))
 			{
 				newInspector = SERVER_CONFIG.getInspectorFactory().create();
-				newInspector.setContext(context);
+				injectContext(newInspector, context);
 			}
 
 			//Make new lists we can manipulate that hold our objects
@@ -402,7 +402,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 			for (NioObjectFactory<? extends NioService> factory : newServices)
 			{
 				NioService service = factory.create();
-				service.setContext(context);
+				injectContext(service, context);
 				servicesToAdd.add(service);
 			}
 
@@ -455,9 +455,53 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 				}
 			}
 		}
+		catch (IllegalAccessException ex)
+		{
+			LOG.error("There was an exception while trying to update the server with the updated definition", ex);
+		}
 		catch (NioObjectCreationException ex)
 		{
 			LOG.error("There was an exception while trying to update the server with the updated definition", ex);
+		}
+	}
+
+	/**
+	 * Applies our context to the passed object (injects it into any fields
+	 * which have the {@link InjectContext} annotation
+	 *
+	 * @param contextUser the object to inject the context into
+	 * @param context     the context object to be injected
+	 *
+	 * @throws IllegalAccessException If there was an exception while trying to
+	 *                                   apply the injection
+	 */
+	public static void injectContext(Object contextUser, Context context) throws IllegalAccessException
+	{
+		LinkedList<Field> fields = new LinkedList<Field>();
+
+		//Get all of our fields for the chain
+		Class<?> c = contextUser.getClass();
+		while (c != null)
+		{
+			fields.addAll(Arrays.asList(c.getDeclaredFields()));
+			c = c.getSuperclass();
+		}
+
+		for (Field f : fields)
+		{
+			//Check for the @Inject and @Named annotations
+			boolean inject = f.getAnnotation(Inject.class) != null;
+			boolean correctClass = f.getType().isAssignableFrom(Context.class);
+
+			//Check we can store it here and it has the annotation
+			if (inject && correctClass)
+			{
+				//Set it accessable
+				f.setAccessible(true);
+
+				//Set the value
+				f.set(contextUser, context);
+			}
 		}
 	}
 

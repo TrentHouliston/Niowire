@@ -14,23 +14,20 @@
  * You should have received a copy of the Lesser GNU General Public License
  * along with Niowire. If not, see <http://www.gnu.org/licenses/>.
  */
-package io.niowire.server;
+package io.niowire.entities;
 
-import io.niowire.server.NioConnection.Context;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * This interface is used when an object uses a NioConnection context object.
  *
  * @author Trent Houliston
  */
-public interface NioContextUser
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Initialize
 {
 
-	/**
-	 * Sets the context object for the NioConnection that is managing this
-	 * object.
-	 *
-	 * @param context the context to be set
-	 */
-	public void setContext(Context context);
 }

@@ -17,8 +17,7 @@
 package io.niowire.service;
 
 import io.niowire.data.NioPacket;
-import io.niowire.entities.NioObject;
-import io.niowire.server.NioContextUser;
+import java.io.Closeable;
 
 /**
  * The NioService interface defines objects which are to be used as services.
@@ -28,7 +27,7 @@ import io.niowire.server.NioContextUser;
  *
  * @author Trent Houliston
  */
-public interface NioService extends NioObject, NioContextUser
+public interface NioService extends Closeable
 {
 
 	/**

@@ -24,11 +24,13 @@ import io.niowire.inspection.TimeoutInspector;
 import io.niowire.serializer.LineSerializer;
 import io.niowire.serializer.NioSerializer;
 import io.niowire.server.NioConnection.Context;
+import io.niowire.server.NioSocketServer.ActiveServer;
 import io.niowire.serversource.Event;
 import io.niowire.serversource.NioServerDefinition;
 import io.niowire.serversource.NioServerSource;
 import io.niowire.service.NioService;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -37,6 +39,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -138,10 +141,15 @@ public class NioSocketServerTest
 		//</editor-fold>
 
 		//<editor-fold defaultstate="collapsed" desc="Test Writing to client">
-		//Get our context (curtosy of the service object)
-		contextCaptor = ArgumentCaptor.forClass(Context.class);
-		verify(service).setContext(contextCaptor.capture());
-		Context context = contextCaptor.getValue();
+		//Get a context object from the NioConnection object serving us (using dodgy reflection)
+		//Warning this makes this a very brittle test, try not to do this too often
+		ActiveServer s = (ActiveServer) server.getServers().get(0);
+		Field f = s.getClass().getDeclaredField("connections");
+		f.setAccessible(true);
+		@SuppressWarnings("unchecked")
+		List<NioConnection> c = (List<NioConnection>) f.get(s);
+		Context context = c.get(0).getContext();
+		//THAT WAS SO HORRIBLE!
 
 		//Return true for us having data
 		when(serializer.hasData()).thenReturn(true);
@@ -367,9 +375,10 @@ public class NioSocketServerTest
 		server.updateServer(defs[2]);
 
 		//Wait for the servers to update
-		verify(services[0][1], timeout(100)).setContext(any(NioConnection.Context.class));
-		verify(services[1][1], timeout(100)).setContext(any(NioConnection.Context.class));
-		verify(services[2][1], timeout(100)).setContext(any(NioConnection.Context.class));
+		//TODO work out a way to check when the server has updated
+//		verify(services[0][1], timeout(100)).setContext(any(NioConnection.Context.class));
+//		verify(services[1][1], timeout(100)).setContext(any(NioConnection.Context.class));
+//		verify(services[2][1], timeout(100)).setContext(any(NioConnection.Context.class));
 
 		//Check that the connections are still active
 		assertFalse("Connection 1 has died", sockets[0].isClosed());
@@ -448,9 +457,10 @@ public class NioSocketServerTest
 		serverPorts[5] = server.updateServer(defs[2]);
 
 		//Wait for the servers to update
-		verify(services[0][0], timeout(100).times(2)).setContext(any(NioConnection.Context.class));
-		verify(services[1][0], timeout(100).times(2)).setContext(any(NioConnection.Context.class));
-		verify(services[2][0], timeout(100).times(2)).setContext(any(NioConnection.Context.class));
+		//TODO work out a way to check when the server has updated
+//		verify(services[0][0], timeout(100).times(2)).setContext(any(NioConnection.Context.class));
+//		verify(services[1][0], timeout(100).times(2)).setContext(any(NioConnection.Context.class));
+//		verify(services[2][0], timeout(100).times(2)).setContext(any(NioConnection.Context.class));
 
 		//Attempt to connect the socket to the old ports (should fail)
 		try
@@ -870,20 +880,19 @@ public class NioSocketServerTest
 											 Collections.<NioServerDefinition, Event>emptyMap());
 
 		//This is a blocking server (we wait on the definition object)
-		when(source.isBlocking()).then(new Answer<Boolean>() {
-
+		when(source.isBlocking()).then(new Answer<Boolean>()
+		{
 			@Override
 			public Boolean answer(InvocationOnMock invocation) throws Throwable
 			{
 				//Wait for the lock to be fired
-				synchronized(lock)
+				synchronized (lock)
 				{
 					lock.wait();
 				}
 
 				return true;
 			}
-
 		});
 
 		//Create our server
@@ -951,7 +960,7 @@ public class NioSocketServerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test(timeout = 10000000)
+	@Test(timeout = 1000)
 	public void testDefaultFactories() throws Exception
 	{
 		//Get the factories
@@ -968,9 +977,12 @@ public class NioSocketServerTest
 
 		//Check that they recognize other objects of the same type
 		LineSerializer lineSerializer = new LineSerializer();
-		lineSerializer.configure(Collections.singletonMap("charset", Charset.defaultCharset().name()));
+		NioObjectFactory.Injector injector1 = new NioObjectFactory.Injector(lineSerializer.getClass(), Collections.singletonMap("charset", Charset.defaultCharset().name()));
+		injector1.inject(lineSerializer);
+
 		TimeoutInspector timeoutInspector = new TimeoutInspector();
-		timeoutInspector.configure(Collections.singletonMap("timeout", -1));
+		NioObjectFactory.Injector injector2 = new NioObjectFactory.Injector(timeoutInspector.getClass(), Collections.singletonMap("timeout", -1));
+		injector2.inject(timeoutInspector);
 
 		assertTrue(defaultSerializer.isInstance(lineSerializer));
 		assertTrue(defaultInspector.isInstance(timeoutInspector));

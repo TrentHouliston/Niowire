@@ -18,14 +18,13 @@ package io.niowire.serversource;
 
 import com.google.gson.*;
 import io.niowire.entities.NioObjectFactory;
-import io.niowire.entities.NioObjectFactory;
 import java.io.*;
-import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +46,8 @@ public class DirectoryServerSource implements NioServerSource
 	/**
 	 * Our Directory
 	 */
-	private File dir;
+	@Inject
+	public File directory;
 	/**
 	 * A GSON instance to parse the json files. has a type adapter that uses the
 	 * {@link NioObjectFactory} as the concrete type of the
@@ -58,22 +58,6 @@ public class DirectoryServerSource implements NioServerSource
 	 * Our current state
 	 */
 	private HashMap<File, Long> servers = new HashMap<File, Long>(1);
-	private Map<String, ? extends Object> configuration;
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void configure(Map<String, ? extends Object> configuration) throws Exception
-	{
-		this.configuration = configuration;
-
-		//Get our directory from the configuration
-		String directory = (String) configuration.get("directory");
-
-		//Get the path
-		dir = new File(directory);
-	}
 
 	/**
 	 * {@inheritDoc}
@@ -102,7 +86,7 @@ public class DirectoryServerSource implements NioServerSource
 		HashMap<NioServerDefinition, Event> changes = new HashMap<NioServerDefinition, Event>(1);
 
 		//Get our files
-		for (File file : dir.listFiles())
+		for (File file : directory.listFiles())
 		{
 			//Check if we already had this server
 			if (!servers.containsKey(file))
@@ -179,7 +163,7 @@ public class DirectoryServerSource implements NioServerSource
 		files.addAll(servers.keySet());
 
 		//Remove the ones that still exist
-		files.removeAll(Arrays.asList(dir.listFiles()));
+		files.removeAll(Arrays.asList(directory.listFiles()));
 
 		//What remains now is all the server which have been deleted
 		for (File f : files)
@@ -198,15 +182,6 @@ public class DirectoryServerSource implements NioServerSource
 
 		//Return our result
 		return changes;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Map<String, ? extends Object> getConfiguration()
-	{
-		return configuration;
 	}
 
 	/**

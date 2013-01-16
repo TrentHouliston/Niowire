@@ -17,12 +17,13 @@
 package io.niowire.serializer;
 
 import io.niowire.data.NioPacket;
+import io.niowire.entities.Initialize;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.*;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import javax.inject.Inject;
 
 /**
  * This class serializes new line delimited binary blobs into strings, It then
@@ -39,16 +40,16 @@ public class LineSerializer extends DelimitedSerializer
 	/**
 	 * Our charset that we are going to use
 	 */
-	private Charset CHARSET = null;
+	@Inject
+	public Charset charset = null;
 	/**
 	 * Our encoder (note not thread safe)
 	 */
 	private CharsetDecoder DECODER = null;
 	/**
-	 * Our decoder (not not thread safe)
+	 * Our decoder (note not thread safe)
 	 */
 	private CharsetEncoder ENCODER = null;
-	private Map<String, ? extends Object> configuration;
 
 	/**
 	 * This method overrides from the Delimited serializer and deserializes the
@@ -112,25 +113,17 @@ public class LineSerializer extends DelimitedSerializer
 	}
 
 	/**
-	 * This loads and configures this Line serializer with its character
-	 * encoding.
-	 *
-	 * @param configuration the configuration to load
+	 * This method initializes the Encoder and Decoder objects from our injected
+	 * character set
 	 *
 	 * @throws Exception there is an exception while setting up the encoders
 	 */
-	@Override
-	public void configure(Map<String, ? extends Object> configuration) throws Exception
+	@Initialize
+	public void init() throws Exception
 	{
-		this.configuration = configuration;
-
-		//Get our charset property
-		String charset = (String) configuration.get("charset");
-
-		//Build our charset, encoder and decoders
-		CHARSET = Charset.forName(charset);
-		DECODER = CHARSET.newDecoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
-		ENCODER = CHARSET.newEncoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
+		//Get an encoder and decoder from our charset
+		DECODER = charset.newDecoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
+		ENCODER = charset.newEncoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
 	}
 
 	/**
@@ -144,7 +137,7 @@ public class LineSerializer extends DelimitedSerializer
 	@Override
 	protected byte[] getDelimiter()
 	{
-		return "\n".getBytes(CHARSET);
+		return "\n".getBytes(charset);
 	}
 
 	/**
@@ -177,14 +170,5 @@ public class LineSerializer extends DelimitedSerializer
 	protected String serializeString(NioPacket obj) throws NioInvalidDataException
 	{
 		return obj.getData().toString();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Map<String, ? extends Object> getConfiguration()
-	{
-		return configuration;
 	}
 }
