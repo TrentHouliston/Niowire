@@ -34,7 +34,43 @@ import java.util.Date;
 public class UniversalConverter
 {
 
-	@SuppressWarnings("unchecked")
+	/**
+	 * This method attempts to convert an object to an arbitrary type. It tries
+	 * a few methods to achieve this (by no means exhaustive) and then throws an
+	 * exception if it cannot.
+	 *
+	 * What it tries (in order) is the following
+	 *
+	 * Attempt to simply cast the object if it can be cast
+	 *
+	 * Attempt to convert it into a {@link Date} object if the target class is a
+	 * date object
+	 *
+	 * Attempt to convert it into a {@link Calendar} if the target class is a
+	 * calendar object
+	 *
+	 * If the source object is a number and the target type is also a number
+	 * then make it the right kind of number
+	 *
+	 * If the to class has a static forName method which accepts a {@link String}, and
+	 * our object is a String attempt to use that
+	 *
+	 * If the to class has a valueOf method and it accepts our object type then
+	 * use that
+	 *
+	 * finally if the target class has a constructor which accepts our object
+	 * type as the parameter, then use that
+	 *
+	 * @param <T>
+	 * @param from
+	 * @param to
+	 *
+	 * @return
+	 */
+	@SuppressWarnings(
+	{
+		"unchecked", "unchecked"
+	})
 	public static <T> T convert(Object from, Class<T> to)
 	{
 		//Try to do a simple cast
@@ -102,6 +138,18 @@ public class UniversalConverter
 			//Well that didn't work
 		}
 
+		//Check if there is a valueOf method we can use
+		try
+		{
+			Method valueOf = to.getMethod("valueOf", from.getClass());
+
+			return (T) valueOf.invoke(null, from);
+		}
+		catch (Exception ex)
+		{
+			//That didn't work either!
+		}
+
 		try
 		{
 			//Check if there is a constructor we can use
@@ -110,6 +158,7 @@ public class UniversalConverter
 		}
 		catch (Exception ex)
 		{
+			//Well that was our last guess, You're on your own now
 		}
 
 		//WE FAIL! can't convert it
