@@ -50,8 +50,8 @@
 	<!-- Source Control Management -->
 	<scm>
 		<url>https://github.com/TrentHouliston/Niowire</url>
-		<connection>git://github.com/TrentHouliston/Niowire.git</connection>
-		<developerConnection>git@github.com:TrentHouliston/Niowire.git</developerConnection>
+		<connection>scm:git:git://github.com/TrentHouliston/Niowire.git</connection>
+		<developerConnection>scm:git:git://github.com/TrentHouliston/Niowire.git</developerConnection>
 		<tag>develop</tag>
 	</scm>
 
@@ -70,6 +70,19 @@
 		</notifiers>
 	</ciManagement>
 
+	<!-- Sonatype's OSS Repository -->
+	<distributionManagement>
+		<snapshotRepository>
+			<id>sonatype-nexus-snapshots</id>
+			<name>Sonatype OSS Snapshots</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+		</snapshotRepository>
+		<repository>
+			<id>sonatype-nexus-staging</id>
+			<name>Sonatype OSS Staging</name>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+		</repository>
+	</distributionManagement>
 
 	<!-- Dependencies -->
 	<dependencies>
@@ -164,22 +177,32 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>2.9</version>
-				<configuration>
-					<tags>
-						<tag>
-							<!-- Custom tag for configurations -->
-							<name>configparam</name>
-							<placement>aoptcmf</placement>
-							<head>Configuration Parameters:</head>
-						</tag>
-					</tags>
-				</configuration>
 				<executions>
 					<execution>
 						<id>attach-javadocs</id>
 						<goals>
 							<goal>jar</goal>
 						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- GPG Plugin for signing artifacts -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>1.4</version>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+						<configuration>
+							<executable>/usr/local/bin/gpg</executable>
+							<passphrase>${user.gpgpassphrase}</passphrase>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
