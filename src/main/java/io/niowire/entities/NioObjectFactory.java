@@ -19,7 +19,6 @@ package io.niowire.entities;
 import io.niowire.RuntimeNiowireException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.Map.Entry;
 import javax.inject.Inject;
@@ -38,7 +37,7 @@ public class NioObjectFactory<T>
 {
 
 	private final Class<T> clazz;
-	private final Injector injector;
+	private final Injector<T> injector;
 
 	/**
 	 * This constructs a new Object Factory using the passed className
@@ -90,7 +89,7 @@ public class NioObjectFactory<T>
 	public NioObjectFactory(Class<T> clazz, Map<String, ? extends Object> configuration)
 	{
 		//Build our configuration
-		injector = new Injector(clazz, configuration);
+		injector = new Injector<T>(clazz, configuration);
 
 		//Store our class
 		this.clazz = clazz;
@@ -147,8 +146,10 @@ public class NioObjectFactory<T>
 	 * This is a configuration object which is built up based on a passed config
 	 * and a class. It gathers all of the fields and the values to set them to,
 	 * as well as the init methods which need to be run.
+	 *
+	 * @param <T> the type of object that this injector injects into
 	 */
-	public static class Injector
+	public static class Injector<T>
 	{
 
 		private final Map<Field, ? super Object> fields;
@@ -157,13 +158,13 @@ public class NioObjectFactory<T>
 
 		/**
 		 * This method builds a map of the fields to the configuration
-		 * parameters which should go into them based on the {@link Inject annotations on the
+		 * parameters which should go into them based on the {@link Inject} annotations on the
 		 * class (and superclass)
 		 *
 		 * @param clazz         the class to build the Fields map from
 		 * @param configuration the configuration to build the values from
 		 */
-		public Injector(Class<?> clazz, Map<String, ? extends Object> configuration)
+		public Injector(Class<T> clazz, Map<String, ? extends Object> configuration)
 		{
 			this.clazz = clazz;
 
@@ -212,7 +213,7 @@ public class NioObjectFactory<T>
 			else
 			{
 				//Otherwise we will use an empty map as our config
-				fields = (HashMap<Field, ? super Object>) Collections.EMPTY_MAP;
+				fields = Collections.<Field, Object>emptyMap();
 			}
 
 			methods = new LinkedList<Method>();
@@ -255,7 +256,7 @@ public class NioObjectFactory<T>
 		 *
 		 * @param o the object to inject into
 		 */
-		public void inject(Object o)
+		public void inject(T o)
 		{
 			//Check if we should even bother
 			if (!this.fields.isEmpty())

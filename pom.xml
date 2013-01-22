@@ -12,13 +12,14 @@
 	<name>Niowire</name>
 	<url>http://niowire.io</url>
 	<description>
-		Niowire is a non blocking socket server framework for java. It is made
-		to make the task of writing and implementing a high performance server
-		designed to hold many simultanious connections easy. All that has to be
-		written to use it are a parser to parse the binary stream into objects
-		(or you can use one of the built in ones), a mangler to filter and
-		authenticate packets (or again, use one of the built in ones) and a
-		service which uses the data packets (more built in ones here too!)
+		Niowire is a non blocking socket server framework for java. It makes the
+		task of writing and implementing a highly scalable server capable of
+		many simultaneous connections easy. All that has to be written to
+		use it are a Serializer to parse the binary stream into objects (or you
+		can use one of the built in ones), an Inspector which filters,
+		authenticates and modifies packets packets (or again, use one of the
+		built in ones) and one or more services which uses the data packets
+		(more built in ones here too!)
 	</description>
 
 	<!-- Licencing Information -->

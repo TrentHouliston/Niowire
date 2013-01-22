@@ -4,7 +4,7 @@ Below is a very simple example which configures a single server on port 12345 wh
 
 To implement your own server, you need a Serializer, an Inspector, and one or more services. You can either write these yourself or use one of the built in ones. If you don't specify a Serializer or Inspector it will use the default ones (a LineSerializer using utf-8 and a NullInspector)
 
-```
+```java
 //Make a service
 NioObjectFactory<NioService> service = new ReflectiveNioObjectFactory(EchoService.class);
 
@@ -38,7 +38,7 @@ Niowire is built upon a modular design so that each of the components which are 
 ###Live Reconfiguration
 One of the awesome features of Niowire is that you can perform live reconfiguration of any of the servers without losing a connection. You can change your serializer, inspector, or add and remove services and the existing connections will adjust to the new state. You can even change the port that your server is listening on and the existing connections will still be maintained. This is ideal for the requirements of high availability servers.
 ####Example
-```
+```java
 NioServerDefinition def;
 NioSocketServer server = new NioSocketServer();
 server.add(def);
@@ -58,7 +58,7 @@ There is currently only one built in server source (which uses a directory to ga
     
 The directory server source uses JSON files which are stored in a directory on the hard drive as the configuration for the servers. It monitors the directory and whenever there is a change (file added, file removed, file updated) it will pass these onto the servers. The ID of the server is the name of the file (which will always be unique)
 #####Example File
-```
+```json
 {
 	"name" : "global",
 	"port" : 12012,

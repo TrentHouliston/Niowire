@@ -22,7 +22,6 @@ import io.niowire.entities.NioObjectFactory;
 import io.niowire.inspection.NioAuthenticationException;
 import io.niowire.inspection.NioInspector;
 import io.niowire.serializer.NioSerializer;
-import io.niowire.serversource.NioServerDefinition;
 import io.niowire.service.NioService;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -31,7 +30,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.*;
 import javax.inject.Inject;
-import javax.inject.Named;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -467,7 +465,7 @@ public class NioConnection implements ReadableByteChannel, WritableByteChannel
 
 	/**
 	 * Applies our context to the passed object (injects it into any fields
-	 * which have the {@link InjectContext} annotation
+	 * which have the {@link Inject} annotation)
 	 *
 	 * @param contextUser the object to inject the context into
 	 * @param context     the context object to be injected

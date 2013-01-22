@@ -39,7 +39,6 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -844,6 +843,7 @@ public class NioSocketServerTest
 	 * @throws Exception
 	 */
 	@Test(timeout = 1000)
+	@SuppressWarnings("unchecked")
 	public void testServerSources() throws Exception
 	{
 		//<editor-fold defaultstate="collapsed" desc="Setup Server and Mocking">

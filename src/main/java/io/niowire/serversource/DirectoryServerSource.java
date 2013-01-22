@@ -34,9 +34,6 @@ import org.slf4j.LoggerFactory;
  * will return all the files in this directory as being added. And from then on
  * it will return either added modified or deleted for each of the entries.
  *
- * @configparam directory {@link java.lang.String} - the directory that the
- * server configuration files are located
- *
  * @author Trent Houliston
  */
 public class DirectoryServerSource implements NioServerSource

@@ -20,11 +20,9 @@ import io.niowire.data.NioPacket;
 import io.niowire.server.NioConnection;
 import io.niowire.server.NioConnection.Context;
 import java.io.IOException;
-import java.util.Collections;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**

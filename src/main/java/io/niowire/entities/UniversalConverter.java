@@ -52,8 +52,8 @@ public class UniversalConverter
 	 * If the source object is a number and the target type is also a number
 	 * then make it the right kind of number
 	 *
-	 * If the to class has a static forName method which accepts a {@link String}, and
-	 * our object is a String attempt to use that
+	 * If the to class has a static forName method which accepts a
+	 * {@link String}, and our object is a String attempt to use that
 	 *
 	 * If the to class has a valueOf method and it accepts our object type then
 	 * use that
@@ -61,11 +61,11 @@ public class UniversalConverter
 	 * finally if the target class has a constructor which accepts our object
 	 * type as the parameter, then use that
 	 *
-	 * @param <T>
-	 * @param from
-	 * @param to
+	 * @param <T>  they type of the object that will be returned
+	 * @param from the object which we are converting from
+	 * @param to   the class type to try to convert this object to
 	 *
-	 * @return
+	 * @return a class of type T based on this object
 	 */
 	@SuppressWarnings(
 	{
@@ -163,5 +163,12 @@ public class UniversalConverter
 
 		//WE FAIL! can't convert it
 		throw new RuntimeNiowireException("Was unable to convert the parameter");
+	}
+
+	/**
+	 * Utility classes should not be constructable
+	 */
+	private UniversalConverter()
+	{
 	}
 }
