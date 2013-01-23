@@ -36,7 +36,7 @@ public class EchoService implements NioService
 	private static final Logger LOG = LoggerFactory.getLogger(EchoService.class);
 	//The context of this connection
 	@Inject
-	private Context context;
+	protected Context context;
 
 	/**
 	 * Gets a packet of data to process from the client. It will be returned

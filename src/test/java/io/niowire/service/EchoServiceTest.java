@@ -17,9 +17,11 @@
 package io.niowire.service;
 
 import io.niowire.data.NioPacket;
+import io.niowire.entities.Injector;
 import io.niowire.server.NioConnection;
 import io.niowire.server.NioConnection.Context;
 import java.io.IOException;
+import java.util.Collections;
 import org.junit.Test;
 import org.mockito.InOrder;
 
@@ -67,8 +69,9 @@ public class EchoServiceTest
 		NioConnection.Context context = mock(NioConnection.Context.class);
 		when(context.getUid()).thenReturn("TEST");
 
-		//Set echo's context as this mocked object
-		NioConnection.injectContext(echo, context);
+		//Inject the context
+		Injector<EchoService> injector = new Injector<EchoService>(EchoService.class, Collections.singletonMap("context", context));
+		injector.inject(echo);
 
 		//Loop through our strings
 		for (NioPacket p : packets)
@@ -98,12 +101,15 @@ public class EchoServiceTest
 	@Test(timeout = 1000)
 	public void testExceptionOnWrite() throws Exception
 	{
-		Context mock = mock(NioConnection.Context.class);
-		doThrow(new IOException()).when(mock).write(any(NioPacket.class));
+		Context context = mock(NioConnection.Context.class);
+		doThrow(new IOException()).when(context).write(any(NioPacket.class));
 
 		EchoService service = new EchoService();
 
-		NioConnection.injectContext(service, mock);
+		//Inject the context
+		Injector<EchoService> injector = new Injector<EchoService>(EchoService.class, Collections.singletonMap("context", context));
+		injector.inject(service);
+
 		service.send(new NioPacket("Test", "Test"));
 	}
 

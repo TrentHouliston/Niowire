@@ -17,6 +17,7 @@
 package io.niowire.server;
 
 import io.niowire.NiowireException;
+import io.niowire.entities.NioObjectCreationException;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.inspection.NioInspector;
 import io.niowire.inspection.TimeoutInspector;
@@ -695,7 +696,6 @@ public class NioSocketServer implements Runnable
 		 *
 		 * @return returns true if the port was updated (need to change our
 		 *               server)
-		 *
 		 */
 		protected boolean update(NioServerDefinition def)
 		{
@@ -715,7 +715,14 @@ public class NioSocketServer implements Runnable
 			//Loop through our connections and tell them to update themselves
 			for (NioConnection con : connections)
 			{
-				con.updateServerDefinition();
+				try
+				{
+					con.updateServerDefinition();
+				}
+				catch (NioObjectCreationException ex)
+				{
+					LOG.error("There was an exception while trying to update a connection", ex);
+				}
 			}
 
 			return portUpdated;

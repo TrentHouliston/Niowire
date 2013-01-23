@@ -17,6 +17,7 @@
 package io.niowire.serializer;
 
 import io.niowire.data.NioPacket;
+import io.niowire.entities.Injector;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.server.NioConnection;
 import io.niowire.server.NioConnection.Context;
@@ -57,11 +58,8 @@ public class LineSerializerTest
 		LineSerializer serializer = new LineSerializer();
 
 		//Push through a configuration
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(serializer.getClass(), Collections.singletonMap("charset", charset));
-		injector.inject(serializer);
-
-		//Inject the context
-		NioConnection.injectContext(serializer, context);
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Allocate a buffer to hold the result
 		ByteBuffer buffer = ByteBuffer.allocate(100);
@@ -97,11 +95,8 @@ public class LineSerializerTest
 		LineSerializer serializer = new LineSerializer();
 
 		//Push through a configuration
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(serializer.getClass(), Collections.singletonMap("charset", charset));
-		injector.inject(serializer);
-
-		//Inject the context
-		NioConnection.injectContext(serializer, context);
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Wrap the message in a buffer
 		ByteBuffer data = ByteBuffer.wrap(message.getBytes(charset));
@@ -136,11 +131,8 @@ public class LineSerializerTest
 		LineSerializer serializer = new LineSerializer();
 
 		//Push through a configuration
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(serializer.getClass(), Collections.singletonMap("charset", charset));
-		injector.inject(serializer);
-
-		//Inject a context
-		NioConnection.injectContext(serializer, context);
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Wrap the message in a buffer
 		ByteBuffer data = ByteBuffer.wrap(message.getBytes(charset));
@@ -185,11 +177,8 @@ public class LineSerializerTest
 		LineSerializer serializer = new LineSerializer();
 
 		//Push through a configuration
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(serializer.getClass(), Collections.singletonMap("charset", charset));
-		injector.inject(serializer);
-
-		//Inject a context
-		NioConnection.injectContext(serializer, context);
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Wrap the message in a buffer
 		ByteBuffer data = ByteBuffer.wrap(message.getBytes(charset));
@@ -237,11 +226,8 @@ public class LineSerializerTest
 			LineSerializer serializer = new LineSerializer();
 
 			//Push through a configuration
-			NioObjectFactory.Injector injector = new NioObjectFactory.Injector(serializer.getClass(), Collections.singletonMap("charset", charset));
-			injector.inject(serializer);
-
-			//Inject a context
-			NioConnection.injectContext(serializer, context);
+			Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+			injector.inject(serializer, Collections.singletonMap("context", context));
 
 			//Wrap the message in a buffer
 			ByteBuffer data = ByteBuffer.wrap((testString + "\n").getBytes(charset));
@@ -280,11 +266,8 @@ public class LineSerializerTest
 		LineSerializer serializer = new LineSerializer();
 
 		//Push through a configuration
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(serializer.getClass(), Collections.singletonMap("charset", charset));
-		injector.inject(serializer);
-
-		//Inject a context
-		NioConnection.injectContext(serializer, context);
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Allocate a buffer to hold the result
 		ByteBuffer buffer = ByteBuffer.allocate(100);
@@ -325,11 +308,8 @@ public class LineSerializerTest
 		LineSerializer serializer = new LineSerializer();
 
 		//Push through a configuration
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(serializer.getClass(), Collections.singletonMap("charset", charset));
-		injector.inject(serializer);
-
-		//Inject a context
-		NioConnection.injectContext(serializer, context);
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Wrap the message in a buffer
 		ByteBuffer data = ByteBuffer.wrap(message.getBytes(charset));
@@ -380,11 +360,8 @@ public class LineSerializerTest
 		LineSerializer serializer = new LineSerializer();
 
 		//Push through a configuration
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(serializer.getClass(), Collections.singletonMap("charset", charset));
-		injector.inject(serializer);
-
-		//Inject a context
-		NioConnection.injectContext(serializer, context);
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Get our packets
 		List<NioPacket> packets = serializer.deserialize(input);

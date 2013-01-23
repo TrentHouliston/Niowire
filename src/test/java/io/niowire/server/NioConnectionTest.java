@@ -68,7 +68,6 @@ public class NioConnectionTest
 	@Before
 	public void setUp() throws Exception
 	{
-
 		//Create some mock objects
 		key = mock(SelectionKey.class);
 		serialize = mock(NioSerializer.class);

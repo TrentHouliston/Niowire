@@ -16,13 +16,8 @@
  */
 package io.niowire.entities;
 
-import io.niowire.RuntimeNiowireException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.*;
-import java.util.Map.Entry;
-import javax.inject.Inject;
-import javax.inject.Named;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * This class is used to create NioObjects using reflection from a Class Name
@@ -106,13 +101,30 @@ public class NioObjectFactory<T>
 	 */
 	public T create() throws NioObjectCreationException
 	{
+		return create(Collections.<String, Object>emptyMap());
+	}
+
+	/**
+	 * This method creates a new NioObject from the class name and configuration
+	 * which were passed to this object. It also uses the passed map to provide
+	 * custom injections to the created object
+	 *
+	 * @param injections the additional objects to inject on this creation
+	 *
+	 * @return the newly created and configured NioObject
+	 *
+	 * @throws NioObjectCreationException if there was an exception while trying
+	 *                                       to create this object.
+	 */
+	public T create(Map<String, ? extends Object> injections) throws NioObjectCreationException
+	{
 		try
 		{
 			//Create a class object from our class name
 			T obj = clazz.newInstance();
 
 			//Inject
-			injector.inject(obj);
+			injector.inject(obj, injections);
 
 			//Return the object
 			return obj;
@@ -140,198 +152,5 @@ public class NioObjectFactory<T>
 	public boolean isInstance(Object obj)
 	{
 		return injector.isSame(obj);
-	}
-
-	/**
-	 * This is a configuration object which is built up based on a passed config
-	 * and a class. It gathers all of the fields and the values to set them to,
-	 * as well as the init methods which need to be run.
-	 *
-	 * @param <T> the type of object that this injector injects into
-	 */
-	public static class Injector<T>
-	{
-
-		private final Map<Field, ? super Object> fields;
-		private final List<Method> methods;
-		private final Class<?> clazz;
-
-		/**
-		 * This method builds a map of the fields to the configuration
-		 * parameters which should go into them based on the {@link Inject} annotations on the
-		 * class (and superclass)
-		 *
-		 * @param clazz         the class to build the Fields map from
-		 * @param configuration the configuration to build the values from
-		 */
-		public Injector(Class<T> clazz, Map<String, ? extends Object> configuration)
-		{
-			this.clazz = clazz;
-
-			//First get all our fields (if there are fields to get)
-			if (configuration != null && !configuration.isEmpty())
-			{
-				LinkedList<Field> allFields = new LinkedList<Field>();
-				fields = new HashMap<Field, Object>(10);
-
-				//Get all of our fields for the chain
-				Class<?> c = clazz;
-				while (c != null)
-				{
-					allFields.addAll(Arrays.asList(c.getDeclaredFields()));
-					c = c.getSuperclass();
-				}
-
-				//Loop through the fields matching up the configuration with the result
-				for (Field f : allFields)
-				{
-					//Check for the @Inject and @Named annotations
-					boolean inject = f.getAnnotation(Inject.class) != null;
-					Named name = f.getAnnotation(Named.class);
-
-					//If we are injecting
-					if (inject)
-					{
-						//Set our field to be accessable
-						f.setAccessible(true);
-
-						//Get the value we are injecting from
-						String source = (name == null || name.value().isEmpty()) ? f.getName() : name.value();
-
-						//Check we have that config option
-						if (configuration.containsKey(source))
-						{
-							//Convert our value
-							Object value = UniversalConverter.convert(configuration.get(source), f.getType());
-
-							//Add the injection to our map
-							fields.put(f, value);
-						}
-					}
-				}
-			}
-			else
-			{
-				//Otherwise we will use an empty map as our config
-				fields = Collections.<Field, Object>emptyMap();
-			}
-
-			methods = new LinkedList<Method>();
-
-			//Get all of our fields for the chain
-			Class<?> c = clazz;
-			while (c != null)
-			{
-				methods.addAll(Arrays.asList(c.getDeclaredMethods()));
-				c = c.getSuperclass();
-			}
-
-			//Loop through all the methods removing the ones with no annotation
-			for (Iterator<Method> it = methods.iterator(); it.hasNext();)
-			{
-				Method next = it.next();
-
-				if (next.getAnnotation(Initialize.class) != null)
-				{
-					if (next.getParameterTypes().length > 0)
-					{
-						throw new UnsupportedOperationException("Initialize methods must take no parameters");
-					}
-					else if (next.getAnnotation(Initialize.class) != null)
-					{
-						next.setAccessible(true);
-					}
-				}
-				else
-				{
-					it.remove();
-				}
-			}
-		}
-
-		/**
-		 * This method injects all the variables from the Injector into the
-		 * object and runs all methods which are marked with an
-		 * {@link Initialize} annotation
-		 *
-		 * @param o the object to inject into
-		 */
-		public void inject(T o)
-		{
-			//Check if we should even bother
-			if (!this.fields.isEmpty())
-			{
-				try
-				{
-					//Loop through each of our fields
-					for (Entry<Field, ? extends Object> entry : this.fields.entrySet())
-					{
-						//Set our value
-						entry.getKey().set(o, entry.getValue());
-					}
-				}
-				//If an exception occurs then wrap and throw it
-				catch (RuntimeException ex)
-				{
-					throw new RuntimeNiowireException(ex);
-				}
-				catch (Exception ex)
-				{
-					throw new RuntimeNiowireException(ex);
-				}
-			}
-			//Loop through all the methods
-			for (Method m : this.methods)
-			{
-				try
-				{
-					m.invoke(o);
-					//If an exception occurs then wrap and throw it
-				}
-				catch (RuntimeException ex)
-				{
-					throw new RuntimeNiowireException(ex);
-				}
-				catch (Exception ex)
-				{
-					throw new RuntimeNiowireException(ex);
-				}
-			}
-		}
-
-		/**
-		 * Checks if the passed object has all of it's injectable fields equal
-		 * to this injector
-		 *
-		 * @param obj the object to check
-		 *
-		 * @return if the objects fields are what the injector would inject
-		 */
-		public boolean isSame(Object obj)
-		{
-			try
-			{
-				//Test the object is the correct class
-				if (obj.getClass() == clazz)
-				{
-					for (Entry<Field, ? extends Object> entry : fields.entrySet())
-					{
-						if (!entry.getKey().get(obj).equals(entry.getValue()))
-						{
-							return false;
-						}
-					}
-					return true;
-				}
-				else
-				{
-					return false;
-				}
-			}
-			catch (IllegalAccessException ex)
-			{
-				return false;
-			}
-		}
 	}
 }

@@ -16,6 +16,7 @@
  */
 package io.niowire.serversource;
 
+import io.niowire.entities.Injector;
 import io.niowire.entities.NioObjectFactory;
 import java.io.File;
 import java.io.FileWriter;
@@ -106,7 +107,7 @@ public class DirectoryServerSourceTest
 		assertFalse(source.isBlocking());
 
 		//Use our temporary directory as our source
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(source.getClass(), Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		Injector<DirectoryServerSource> injector = new Injector<DirectoryServerSource>(DirectoryServerSource.class, Collections.singletonMap("directory", tempDir.getAbsolutePath()));
 		injector.inject(source);
 
 		//Get the changes (should be all the servers)
@@ -163,7 +164,7 @@ public class DirectoryServerSourceTest
 		DirectoryServerSource source = new DirectoryServerSource();
 
 		//Use our temporary directory as our source
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(source.getClass(), Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		Injector<DirectoryServerSource> injector = new Injector<DirectoryServerSource>(DirectoryServerSource.class, Collections.singletonMap("directory", tempDir.getAbsolutePath()));
 		injector.inject(source);
 
 		//Check that 5 servers were returned
@@ -221,7 +222,7 @@ public class DirectoryServerSourceTest
 		DirectoryServerSource source = new DirectoryServerSource();
 
 		//Use our temporary directory as our source
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(source.getClass(), Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		Injector<DirectoryServerSource> injector = new Injector<DirectoryServerSource>(DirectoryServerSource.class, Collections.singletonMap("directory", tempDir.getAbsolutePath()));
 		injector.inject(source);
 
 		//Check that 5 servers were returned
@@ -277,7 +278,7 @@ public class DirectoryServerSourceTest
 		DirectoryServerSource source = new DirectoryServerSource();
 
 		//Use our temporary directory as our source
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(source.getClass(), Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		Injector<DirectoryServerSource> injector = new Injector<DirectoryServerSource>(DirectoryServerSource.class, Collections.singletonMap("directory", tempDir.getAbsolutePath()));
 		injector.inject(source);
 
 		//Check that 5 servers were returned
@@ -343,7 +344,7 @@ public class DirectoryServerSourceTest
 		DirectoryServerSource source = new DirectoryServerSource();
 
 		//Use our temporary directory as our source
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(source.getClass(), Collections.singletonMap("directory", tempDir.getAbsolutePath()));
+		Injector<DirectoryServerSource> injector = new Injector<DirectoryServerSource>(DirectoryServerSource.class, Collections.singletonMap("directory", tempDir.getAbsolutePath()));
 		injector.inject(source);
 
 		//Check that 5 servers were returned

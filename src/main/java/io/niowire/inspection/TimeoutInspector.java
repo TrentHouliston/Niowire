@@ -33,7 +33,7 @@ public class TimeoutInspector implements NioInspector
 
 	//Our context
 	@Inject
-	private Context context = null;
+	protected Context context = null;
 	private long lastMessage = System.currentTimeMillis();
 	@Inject
 	private long timeout;

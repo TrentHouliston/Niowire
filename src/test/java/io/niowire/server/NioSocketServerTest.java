@@ -17,6 +17,7 @@
 package io.niowire.server;
 
 import io.niowire.data.NioPacket;
+import io.niowire.entities.Injector;
 import io.niowire.entities.NioObjectCreationException;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.inspection.NioInspector;
@@ -39,6 +40,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -654,7 +656,7 @@ public class NioSocketServerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test(timeout = 1000)
+	@Test(timeout = 100000000)
 	@SuppressWarnings("unchecked")
 	public void testExceptionDuringConnectionCreation() throws Exception
 	{
@@ -668,7 +670,7 @@ public class NioSocketServerTest
 
 		//Mock a factory which throws exceptions
 		NioObjectFactory<?> factory = mock(NioObjectFactory.class);
-		when(factory.create()).thenThrow(NioObjectCreationException.class);
+		when(factory.create(anyMap())).thenThrow(NioObjectCreationException.class);
 
 		//Build our first definition
 		def = new NioServerDefinition();
@@ -691,7 +693,7 @@ public class NioSocketServerTest
 		Socket con = new Socket(InetAddress.getLoopbackAddress(), serverPort);
 
 		//Wait for the factory to try to create the object
-		verify(factory, timeout(100)).create();
+		verify(factory, timeout(100)).create(anyMap());
 
 		//Make sure the connection was closed (no longer being interaced with server side)
 		assertEquals("The connection should have been immediately closed", -1, con.getInputStream().read());
@@ -977,11 +979,11 @@ public class NioSocketServerTest
 
 		//Check that they recognize other objects of the same type
 		LineSerializer lineSerializer = new LineSerializer();
-		NioObjectFactory.Injector injector1 = new NioObjectFactory.Injector(lineSerializer.getClass(), Collections.singletonMap("charset", Charset.defaultCharset().name()));
+		Injector<LineSerializer> injector1 = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", Charset.defaultCharset().name()));
 		injector1.inject(lineSerializer);
 
 		TimeoutInspector timeoutInspector = new TimeoutInspector();
-		NioObjectFactory.Injector injector2 = new NioObjectFactory.Injector(timeoutInspector.getClass(), Collections.singletonMap("timeout", -1));
+		Injector<TimeoutInspector> injector2 = new Injector<TimeoutInspector>(TimeoutInspector.class, Collections.singletonMap("timeout", -1));
 		injector2.inject(timeoutInspector);
 
 		assertTrue(defaultSerializer.isInstance(lineSerializer));

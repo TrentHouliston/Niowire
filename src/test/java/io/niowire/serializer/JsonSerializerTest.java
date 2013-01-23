@@ -1,6 +1,7 @@
 package io.niowire.serializer;
 
 import io.niowire.data.NioPacket;
+import io.niowire.entities.Injector;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.server.NioConnection;
 import java.nio.ByteBuffer;
@@ -40,10 +41,8 @@ public class JsonSerializerTest
 		serializer = new JsonSerializer();
 
 		//Push through a configuration
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(serializer.getClass(), Collections.singletonMap("charset", charset));
-		injector.inject(serializer);
-
-		NioConnection.injectContext(serializer, context);
+		Injector<JsonSerializer> injector = new Injector<JsonSerializer>(JsonSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 	}
 
 	/**
@@ -141,7 +140,7 @@ public class JsonSerializerTest
 		newConfig.put("pojoClass", JsonSerializerPojoTest.class.getName());
 
 		//Push through a new configuration
-		NioObjectFactory.Injector injector = new NioObjectFactory.Injector(serializer.getClass(), newConfig);
+		Injector<JsonSerializer> injector = new Injector<JsonSerializer>(JsonSerializer.class, newConfig);
 		injector.inject(serializer);
 
 		//Make a buffer
@@ -152,8 +151,8 @@ public class JsonSerializerTest
 
 		assertEquals("There should be 1 packet", 1, packets.size());
 		assertTrue("The packet shoudl be our test object", packets.get(0).getData() instanceof JsonSerializerPojoTest);
-		assertEquals("The dog should say meow", "meow", ((JsonSerializerPojoTest)packets.get(0).getData()).dog);
-		assertEquals("The cat should say woof", "woof", ((JsonSerializerPojoTest)packets.get(0).getData()).cat);
+		assertEquals("The dog should say meow", "meow", ((JsonSerializerPojoTest) packets.get(0).getData()).dog);
+		assertEquals("The cat should say woof", "woof", ((JsonSerializerPojoTest) packets.get(0).getData()).cat);
 	}
 
 	/**

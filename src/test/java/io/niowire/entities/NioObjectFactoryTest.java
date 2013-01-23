@@ -16,12 +16,11 @@
  */
 package io.niowire.entities;
 
-import io.niowire.entities.NioObjectFactory.Injector;
-import java.util.Collections;
 import java.util.HashMap;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 /**
@@ -31,227 +30,6 @@ import static org.junit.Assert.*;
  */
 public class NioObjectFactoryTest
 {
-
-	/**
-	 * This test ensures that the configuration and injection works as expected
-	 * at the various access levels (checking that they can all be injected
-	 * into)
-	 */
-	@Test(timeout = 1000)
-	public void testBuildApplyAccessLevels()
-	{
-		//Create an object to test with
-		TestClass obj = new TestClass();
-
-		//Create some data
-		HashMap<String, String> testData = new HashMap<String, String>(4);
-		testData.put("superPrivate", "TEST_SUPER_PRIVATE");
-		testData.put("superProtected", "TEST_SUPER_PROTECTED");
-		testData.put("superDefault", "TEST_SUPER_DEFAULT");
-		testData.put("superPublic", "TEST_SUPER_PUBLIC");
-
-		//Build a configuration and configure the object
-		Injector injector = new Injector(TestClass.class, testData);
-		injector.inject(obj);
-
-		//Check that all the fields were injected properly
-		assertEquals("The private injection did not have the expected result", "TEST_SUPER_PRIVATE", obj.superPrivate);
-		assertEquals("The protected injection did not have the expected result", "TEST_SUPER_PROTECTED", obj.superProtected);
-		assertEquals("The default injection did not have the expected result", "TEST_SUPER_DEFAULT", obj.superDefault);
-		assertEquals("The public injection did not have the expected result", "TEST_SUPER_PUBLIC", obj.superPublic);
-	}
-
-	/**
-	 * Tests that injection follows the inheritance chain, injecting as it goes
-	 * up
-	 */
-	@Test(timeout = 1000)
-	public void testBuildApplySuperClass()
-	{
-		//Create an object to test with
-		SubClass obj = new SubClass();
-
-		//Create some data
-		HashMap<String, String> testData = new HashMap<String, String>(4);
-		testData.put("superPrivate", "TEST_SUPER_PRIVATE");
-		testData.put("superProtected", "TEST_SUPER_PROTECTED");
-		testData.put("superDefault", "TEST_SUPER_DEFAULT");
-		testData.put("superPublic", "TEST_SUPER_PUBLIC");
-		testData.put("subClassValue", "TEST_SUB_CLASS_VALUE");
-
-		//Build a configuration and configure the object
-		Injector injector = new Injector(SubClass.class, testData);
-		injector.inject(obj);
-
-		//Check that all the fields were injected properly (we have to cast to the super object to access the private member)
-		assertEquals("The private injection did not have the expected result", "TEST_SUPER_PRIVATE", ((TestClass) obj).superPrivate);
-		assertEquals("The protected injection did not have the expected result", "TEST_SUPER_PROTECTED", obj.superProtected);
-		assertEquals("The default injection did not have the expected result", "TEST_SUPER_DEFAULT", obj.superDefault);
-		assertEquals("The public injection did not have the expected result", "TEST_SUPER_PUBLIC", obj.superPublic);
-		assertEquals("The subclass injection did not have the expected result", "TEST_SUB_CLASS_VALUE", obj.subClassValue);
-	}
-
-	/**
-	 * Tests that if a configuration is missing, the value is left unchanged
-	 * (uses the default)
-	 */
-	@Test(timeout = 1000)
-	public void testIgnoreMissingConfigs()
-	{
-		//Create an object to test with
-		TestClass obj = new TestClass();
-
-		//Create some data with protected and public missing
-		HashMap<String, String> testData = new HashMap<String, String>(4);
-		testData.put("superPrivate", "TEST_SUPER_PRIVATE");
-		testData.put("superDefault", "TEST_SUPER_DEFAULT");
-
-		//Build a configuration and configure the object
-		Injector injector = new Injector(TestClass.class, testData);
-		injector.inject(obj);
-
-		//Check that all the fields were injected properly and that public and protected were left unchanged
-		assertEquals("The private injection did not have the expected result", "TEST_SUPER_PRIVATE", obj.superPrivate);
-		assertEquals("The protected field was injected when it should not have been", "DEFAULT_SUPER_PROTECTED", obj.superProtected);
-		assertEquals("The default injection did not have the expected result", "TEST_SUPER_DEFAULT", obj.superDefault);
-		assertEquals("The public field was injected when it should not have been", "DEFAULT_SUPER_PUBLIC", obj.superPublic);
-	}
-
-	/**
-	 * Tests that only fields which have the annotation are injected. (And
-	 * included in this is that any configuration elements without an element to
-	 * go into will be ignored)
-	 */
-	@Test(timeout = 1000)
-	public void testAnnotationCheckConfigs()
-	{
-		//Create an object to test with
-		TestClass obj = new TestClass();
-
-		//Create some data
-		HashMap<String, String> testData = new HashMap<String, String>(4);
-		testData.put("ignoreMe", "TEST_IGNORE_ME");
-
-		//Build a configuration and configure the object
-		Injector injector = new Injector(TestClass.class, testData);
-		injector.inject(obj);
-
-		//Check that all the fields were injected properly
-		assertEquals("The field without an annotation was injected into", "DEFAULT_IGNORE_ME", obj.ignoreMe);
-	}
-
-	/**
-	 * Tests that parameters which use the {@link Named} annotation use that
-	 * name for their source instead of the field name.
-	 */
-	@Test(timeout = 1000)
-	public void testNamedParameters()
-	{
-		//Create an object to test with
-		TestClass obj = new TestClass();
-
-		//Create some data
-		HashMap<String, String> testData = new HashMap<String, String>(4);
-		testData.put("namedValue", "TEST_NAMED_VALUE");
-
-		//Build a configuration and configure the object
-		Injector injector = new Injector(TestClass.class, testData);
-		injector.inject(obj);
-
-		//Check that all the fields were injected properly
-		assertEquals("The named field was not injected into", "TEST_NAMED_VALUE", obj.notNamedValue);
-	}
-
-	/**
-	 * Tests that named parameters will not be set through their field name
-	 */
-	@Test(timeout = 1000)
-	public void testNotNamedParameters()
-	{
-		//Create an object to test with
-		TestClass obj = new TestClass();
-
-		//Create some data
-		HashMap<String, String> testData = new HashMap<String, String>(4);
-		testData.put("notNamedValue", "TEST_NOT_NAMED_VALUE");
-
-		//Build a configuration and configure the object
-		Injector injector = new Injector(TestClass.class, testData);
-		injector.inject(obj);
-
-		//Check that all the fields were injected properly
-		assertEquals("The named field was not injected into", "DEFAULT_NOT_NAMED_VALUE", obj.notNamedValue);
-	}
-
-	/**
-	 * Test that methods with the {@link Initialize} annotation are run. Also
-	 * tests that the injection operation is performed before the Init methods
-	 */
-	@Test(timeout = 1000)
-	public void testInitMethods()
-	{
-		//Create an object to test with
-		TestClass obj = new TestClass();
-
-		//Create some data
-		HashMap<String, String> testData = new HashMap<String, String>(1);
-		testData.put("namedValue", "TEST_NOT_NAMED_VALUE");
-
-		//Build a configuration and configure the object
-		Injector injector = new Injector(TestClass.class, testData);
-		injector.inject(obj);
-
-		//Check that the init method ran properly
-		assertEquals("The init method did not run", "TEST_NOT_NAMED_VALUE", obj.testInit);
-	}
-
-	/**
-	 * Tests that private init methods are run (to test access permissions
-	 */
-	/**
-	 * Test that methods with the {@link Initialize} annotation are run. Also
-	 * tests that the injection operation is performed before the Init methods
-	 */
-	@Test(timeout = 1000)
-	public void testPrivateInitMethods()
-	{
-		//Create an object to test with
-		TestClass obj = new TestClass();
-
-		//Create some data
-		HashMap<String, String> testData = new HashMap<String, String>(1);
-		testData.put("namedValue", "TEST_NOT_NAMED_VALUE");
-
-		//Build a configuration and configure the object
-		Injector injector = new Injector(TestClass.class, testData);
-		injector.inject(obj);
-
-		//Check that the init method ran properly
-		assertEquals("The init method did not run", "TEST_NOT_NAMED_VALUE", obj.testPrivateInit);
-	}
-
-	/**
-	 * Tests that when the sub class has another init method that both are run
-	 * (also tests that multiple init methods will be run)
-	 */
-	@Test(timeout = 1000)
-	public void testSuperClassInitMethods()
-	{
-		//Create an object to test with
-		SubClass obj = new SubClass();
-
-		//Create some data
-		HashMap<String, String> testData = new HashMap<String, String>(1);
-		testData.put("namedValue", "TEST_NOT_NAMED_VALUE");
-
-		//Build a configuration and configure the object
-		Injector injector = new Injector(SubClass.class, testData);
-		injector.inject(obj);
-
-		//Check that the init method ran properly
-		assertEquals("The superclass init method did not run", "TEST_NOT_NAMED_VALUE", obj.testInit);
-		assertEquals("The subclass init method did not run", "TEST_NOT_NAMED_VALUE", obj.subClassInit);
-	}
 
 	/**
 	 * Tests that creating objects works as expected
@@ -329,22 +107,22 @@ public class NioObjectFactoryTest
 
 		//Hand build a superclass using data 1
 		TestClass obj5 = new TestClass();
-		Injector injector5 = new Injector(TestClass.class, testData1);
+		Injector<TestClass> injector5 = new Injector<TestClass>(TestClass.class, testData1);
 		injector5.inject(obj5);
 
 		//Hand build a superclass using data 2
 		TestClass obj6 = new TestClass();
-		Injector injector6 = new Injector(TestClass.class, testData2);
+		Injector<TestClass> injector6 = new Injector<TestClass>(TestClass.class, testData2);
 		injector6.inject(obj6);
 
 		//Hand build a subclass using data 1
 		SubClass obj7 = new SubClass();
-		Injector injector7 = new Injector(SubClass.class, testData1);
+		Injector<SubClass> injector7 = new Injector<SubClass>(SubClass.class, testData1);
 		injector7.inject(obj7);
 
 		//Hand build a subclass using data 2
 		SubClass obj8 = new SubClass();
-		Injector injector8 = new Injector(SubClass.class, testData2);
+		Injector<SubClass> injector8 = new Injector<SubClass>(SubClass.class, testData2);
 		injector8.inject(obj8);
 
 		//Test the results from the 1st factory
