@@ -17,8 +17,7 @@
 package io.niowire.inspection;
 
 import io.niowire.data.NioPacket;
-import io.niowire.entities.NioObject;
-import io.niowire.server.NioContextUser;
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
@@ -53,11 +52,9 @@ import java.io.IOException;
  * adding new data or totally changing it) and returning the modified objects to
  * be sent to the service.
  *
- *
- *
  * @author Trent Houliston
  */
-public interface NioInspector extends NioObject, NioContextUser
+public interface NioInspector extends Closeable
 {
 
 	/**
@@ -72,9 +69,6 @@ public interface NioInspector extends NioObject, NioContextUser
 	 * be unique).
 	 *
 	 * @return a unique identifier to identify this connection
-	 *
-	 * @throws IOException if an IOException occurs while getting the Uid or the
-	 *                        channel is closed
 	 */
 	public String getUid();
 
@@ -89,7 +83,7 @@ public interface NioInspector extends NioObject, NioContextUser
 	 * @return a packet to give to the services, or null if this packet should
 	 *            be filtered
 	 *
-	 * @throws IOException If the channel is closed
+	 * @throws IOException                If the channel is closed
 	 * @throws NioAuthenticationException if this packet made the connection
 	 *                                       fail authentication
 	 */

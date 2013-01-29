@@ -68,7 +68,6 @@ public class NioConnectionTest
 	@Before
 	public void setUp() throws Exception
 	{
-
 		//Create some mock objects
 		key = mock(SelectionKey.class);
 		serialize = mock(NioSerializer.class);
@@ -92,15 +91,6 @@ public class NioConnectionTest
 		activeServer = new ActiveServer(def);
 
 		connection = new NioConnection(key, activeServer);
-
-		/*
-		 * Verify that each of the objects recieved a context (verifying here
-		 * means that each test method just has to focus on their own
-		 * verifications)
-		 */
-		verify(serialize).setContext(connection.getContext());
-		verify(inspect).setContext(connection.getContext());
-		verify(service).setContext(connection.getContext());
 	}
 
 	/**
@@ -517,11 +507,11 @@ public class NioConnectionTest
 		 * If this method is called that means that these objects were newly
 		 * created.
 		 */
-		verify(serializers[0]).setContext(connection.getContext());
-		verify(inspectors[0]).setContext(connection.getContext());
-		for (NioService s : services)
+		verify(serializerFactories[0]).create(anyMapOf(String.class, Object.class));
+		verify(inspectorFactories[0]).create(anyMapOf(String.class, Object.class));
+		for (NioObjectFactory<NioService> s : serviceFactories)
 		{
-			verify(s).setContext(connection.getContext());
+			verify(s).create(anyMapOf(String.class, Object.class));
 		}
 
 		//Check that the old objects were closed
@@ -552,12 +542,10 @@ public class NioConnectionTest
 		assertTrue("The services were not updated as expected", currentServices.contains(services[0]));
 
 		/*
-		 * Make sure that the setContext method was called on all these objects.
-		 * If this method is called that means that these objects were newly
-		 * created.
+		 * Make sure that new objects were created from the second factories
 		 */
-		verify(inspectors[1]).setContext(connection.getContext());
-		verify(services[1]).setContext(connection.getContext());
+		verify(inspectorFactories[1]).create(anyMapOf(String.class, Object.class));
+		verify(serviceFactories[1]).create(anyMapOf(String.class, Object.class));
 
 		//Check that the old objects were closed and that the objects that are staying are not
 		verify(inspectors[0]).close();
@@ -595,12 +583,10 @@ public class NioConnectionTest
 				})));
 
 		/*
-		 * Make sure that the setContext method was called on all these objects.
-		 * If this method is called that means that these objects were newly
-		 * created.
+		 * Make sure that the new objects were created from the factories
 		 */
-		verify(inspectors[1]).setContext(connection.getContext());
-		verify(services[2], times(2)).setContext(connection.getContext());
+		verify(inspectorFactories[1]).create(anyMapOf(String.class, Object.class));
+		verify(serviceFactories[2], times(2)).create(anyMapOf(String.class, Object.class));
 
 		//Check that the old objects were closed and that the objects that are staying are not
 		verify(serializers[0]).close();
@@ -613,8 +599,8 @@ public class NioConnectionTest
 		}
 
 		//Verify our new services started
-		verify(services[1], times(2)).setContext(connection.getContext());
-		verify(services[2], times(2)).setContext(connection.getContext());
+		verify(serviceFactories[1], times(2)).create(anyMapOf(String.class, Object.class));
+		verify(serviceFactories[2], times(2)).create(anyMapOf(String.class, Object.class));
 		//</editor-fold>
 
 	}

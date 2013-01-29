@@ -38,6 +38,34 @@ public class NioPacket implements Comparable<NioPacket>
 	 * The data contained in this packet
 	 */
 	private final Object data;
+	/**
+	 * If this packet is treated as a raw packet (raw bytes are used in
+	 * serialization)
+	 */
+	private final boolean raw;
+	/**
+	 * The raw data (or null if there isn't any)
+	 */
+	private byte[] rawData;
+
+	/**
+	 * This constructs a new packet which can have raw data (and optionally use
+	 * it)
+	 *
+	 * @param uid     the unique identifier for the NioConnection which made
+	 *                   this object
+	 * @param data    the serialized object
+	 * @param raw     if the packet should have its raw data used instead of its
+	 *                   object in serialization
+	 * @param rawData the raw data bytes in this packet
+	 */
+	public NioPacket(String uid, Object data, boolean raw, byte[] rawData)
+	{
+		this.data = data;
+		this.source = uid;
+		this.raw = raw;
+		this.rawData = rawData;
+	}
 
 	/**
 	 * Construct a new NioPacket containing this data from the source (the UID
@@ -51,6 +79,7 @@ public class NioPacket implements Comparable<NioPacket>
 	{
 		this.data = data;
 		this.source = uid;
+		this.raw = false;
 	}
 
 	/**
@@ -99,6 +128,26 @@ public class NioPacket implements Comparable<NioPacket>
 	public int compareTo(NioPacket o)
 	{
 		return Long.compare(this.getTimestamp(), o.getTimestamp());
+	}
+
+	/**
+	 * Gets if this packet should be treated as raw data
+	 *
+	 * @return if this packet should be treated as raw data
+	 */
+	public boolean isRaw()
+	{
+		return raw;
+	}
+
+	/**
+	 * The raw data attached to this packet (or null if there is no raw data)
+	 *
+	 * @return the raw data attached to this packet (or null if there is none)
+	 */
+	public byte[] getRawData()
+	{
+		return rawData;
 	}
 
 	/**

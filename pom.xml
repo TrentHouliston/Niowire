@@ -6,19 +6,20 @@
 	<!-- Artifact Details -->
 	<groupId>io.niowire</groupId>
 	<artifactId>niowire</artifactId>
-	<version>0.1</version>
+	<version>0.2</version>
 	<packaging>jar</packaging>
 
 	<name>Niowire</name>
 	<url>http://niowire.io</url>
 	<description>
-		Niowire is a non blocking socket server framework for java. It is made
-		to make the task of writing and implementing a high performance server
-		designed to hold many simultanious connections easy. All that has to be
-		written to use it are a parser to parse the binary stream into objects
-		(or you can use one of the built in ones), a mangler to filter and
-		authenticate packets (or again, use one of the built in ones) and a
-		service which uses the data packets (more built in ones here too!)
+		Niowire is a non blocking socket server framework for java. It makes the
+		task of writing and implementing a highly scalable server capable of
+		many simultaneous connections easy. All that has to be written to
+		use it are a Serializer to parse the binary stream into objects (or you
+		can use one of the built in ones), an Inspector which filters,
+		authenticates and modifies packets packets (or again, use one of the
+		built in ones) and one or more services which uses the data packets
+		(more built in ones here too!)
 	</description>
 
 	<!-- Licencing Information -->
@@ -50,8 +51,8 @@
 	<!-- Source Control Management -->
 	<scm>
 		<url>https://github.com/TrentHouliston/Niowire</url>
-		<connection>git://github.com/TrentHouliston/Niowire.git</connection>
-		<developerConnection>git@github.com:TrentHouliston/Niowire.git</developerConnection>
+		<connection>scm:git:git://github.com/TrentHouliston/Niowire.git</connection>
+		<developerConnection>scm:git:git://github.com/TrentHouliston/Niowire.git</developerConnection>
 		<tag>develop</tag>
 	</scm>
 
@@ -70,6 +71,19 @@
 		</notifiers>
 	</ciManagement>
 
+	<!-- Sonatype's OSS Repository -->
+	<distributionManagement>
+		<snapshotRepository>
+			<id>sonatype-nexus-snapshots</id>
+			<name>Sonatype OSS Snapshots</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+		</snapshotRepository>
+		<repository>
+			<id>sonatype-nexus-staging</id>
+			<name>Sonatype OSS Staging</name>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+		</repository>
+	</distributionManagement>
 
 	<!-- Dependencies -->
 	<dependencies>
@@ -106,6 +120,14 @@
 			<artifactId>mockito-all</artifactId>
 			<version>1.9.5</version>
 			<scope>test</scope>
+			<type>jar</type>
+		</dependency>
+
+		<!-- Java Injection Annotations -->
+		<dependency>
+			<groupId>javax.inject</groupId>
+			<artifactId>javax.inject</artifactId>
+			<version>1</version>
 			<type>jar</type>
 		</dependency>
 	</dependencies>
@@ -156,22 +178,32 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>2.9</version>
-				<configuration>
-					<tags>
-						<tag>
-							<!-- Custom tag for configurations -->
-							<name>configparam</name>
-							<placement>aoptcmf</placement>
-							<head>Configuration Parameters:</head>
-						</tag>
-					</tags>
-				</configuration>
 				<executions>
 					<execution>
 						<id>attach-javadocs</id>
 						<goals>
 							<goal>jar</goal>
 						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- GPG Plugin for signing artifacts -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>1.4</version>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+						<configuration>
+							<executable>/usr/local/bin/gpg</executable>
+							<passphrase>${user.gpgpassphrase}</passphrase>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

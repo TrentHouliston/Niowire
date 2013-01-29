@@ -20,7 +20,10 @@ import io.niowire.data.NioPacket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -570,8 +573,6 @@ public class DelimitedSerializerTest
 	public static class DelimitedSerializerImpl extends DelimitedSerializer
 	{
 
-		private Map<String, ? extends Object> configuration;
-
 		/**
 		 * This method deserializes the data into a byte array and makes this
 		 * the data.
@@ -623,28 +624,6 @@ public class DelimitedSerializerTest
 		public byte[] getDelimiter()
 		{
 			return "\n".getBytes(Charset.defaultCharset());
-		}
-
-		/**
-		 * We don't have any configuration to do
-		 *
-		 * @param configuration the configuration to use
-		 *
-		 * @throws Exception
-		 */
-		@Override
-		public void configure(Map<String, ? extends Object> configuration) throws Exception
-		{
-			this.configuration = configuration;
-		}
-
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public Map<String, ? extends Object> getConfiguration()
-		{
-			return configuration;
 		}
 	}
 }

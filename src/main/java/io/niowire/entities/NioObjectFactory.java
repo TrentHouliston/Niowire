@@ -24,15 +24,15 @@ import java.util.Map;
  * and a configuration. It will use these to construct and configure the class
  * before returning it.
  *
- * @param <T> the type of NioObject which this class returns.
+ * @param <T> the type of object that this factory returns
  *
  * @author Trent Houliston
  */
-public class NioObjectFactory<T extends NioObject>
+public class NioObjectFactory<T>
 {
 
-	private final Class<?> clazz;
-	private final Map<String, ? extends Object> configuration;
+	private final Class<T> clazz;
+	private final Injector<T> injector;
 
 	/**
 	 * This constructs a new Object Factory using the passed className
@@ -41,16 +41,17 @@ public class NioObjectFactory<T extends NioObject>
 	 *
 	 * @throws ClassNotFoundException if the class was not found
 	 */
+	@SuppressWarnings("unchecked")
 	public NioObjectFactory(String className) throws ClassNotFoundException
 	{
-		this(className, Collections.<String, Object>emptyMap());
+		this((Class<T>) Class.forName(className));
 	}
 
 	/**
 	 * This constructs a new Object Factory using the passed class and an empty
 	 * configuration
 	 *
-	 * @param clazz the class to b ea factory for
+	 * @param clazz the class to create the factory for
 	 */
 	public NioObjectFactory(Class<T> clazz)
 	{
@@ -67,13 +68,10 @@ public class NioObjectFactory<T extends NioObject>
 	 *
 	 * @throws ClassNotFoundException
 	 */
+	@SuppressWarnings("unchecked")
 	public NioObjectFactory(String className, Map<String, ? extends Object> configuration) throws ClassNotFoundException
 	{
-		//Store our configuration in an unmodifyable way
-		this.configuration = Collections.unmodifiableMap(configuration);
-
-		//Get the class object
-		clazz = Class.forName(className);
+		this((Class<T>) Class.forName(className), configuration);
 	}
 
 	/**
@@ -85,8 +83,8 @@ public class NioObjectFactory<T extends NioObject>
 	 */
 	public NioObjectFactory(Class<T> clazz, Map<String, ? extends Object> configuration)
 	{
-		//Store our configuration in an unmodifyable way
-		this.configuration = Collections.unmodifiableMap(configuration);
+		//Build our configuration
+		injector = new Injector<T>(clazz, configuration);
 
 		//Store our class
 		this.clazz = clazz;
@@ -103,35 +101,38 @@ public class NioObjectFactory<T extends NioObject>
 	 */
 	public T create() throws NioObjectCreationException
 	{
+		return create(Collections.<String, Object>emptyMap());
+	}
+
+	/**
+	 * This method creates a new NioObject from the class name and configuration
+	 * which were passed to this object. It also uses the passed map to provide
+	 * custom injections to the created object
+	 *
+	 * @param injections the additional objects to inject on this creation
+	 *
+	 * @return the newly created and configured NioObject
+	 *
+	 * @throws NioObjectCreationException if there was an exception while trying
+	 *                                       to create this object.
+	 */
+	public T create(Map<String, ? extends Object> injections) throws NioObjectCreationException
+	{
 		try
 		{
 			//Create a class object from our class name
-			Object obj = clazz.newInstance();
+			T obj = clazz.newInstance();
 
-			if (obj instanceof NioObject)
-			{
-				//We did check it's type
-				@SuppressWarnings("unchecked")
-				T nioObj = (T) obj;
+			//Inject
+			injector.inject(obj, injections);
 
-				//Configure and return
-				nioObj.configure(configuration);
-				return nioObj;
-			}
-			else
-			{
-				throw new NioObjectCreationException(clazz.getName() + " is does not implement NioObject");
-			}
-
+			//Return the object
+			return obj;
 		}
 		//Explicitly catch the runtime exception, we want to catch everything
 		catch (RuntimeException ex)
 		{
 			throw new NioObjectCreationException(ex);
-		}
-		catch (NioObjectCreationException ex)
-		{
-			throw ex;
 		}
 		catch (Exception ex)
 		{
@@ -148,8 +149,8 @@ public class NioObjectFactory<T extends NioObject>
 	 * @return if the object is the same (class and configuration) as this
 	 *            factory creates
 	 */
-	public boolean isInstance(NioObject obj)
+	public boolean isInstance(Object obj)
 	{
-		return obj != null && clazz.equals(obj.getClass()) && this.configuration.equals(obj.getConfiguration());
+		return injector.isSame(obj);
 	}
 }

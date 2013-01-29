@@ -17,6 +17,7 @@
 package io.niowire.server;
 
 import io.niowire.data.NioPacket;
+import io.niowire.entities.Injector;
 import io.niowire.entities.NioObjectCreationException;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.inspection.NioInspector;
@@ -24,11 +25,13 @@ import io.niowire.inspection.TimeoutInspector;
 import io.niowire.serializer.LineSerializer;
 import io.niowire.serializer.NioSerializer;
 import io.niowire.server.NioConnection.Context;
+import io.niowire.server.NioSocketServer.ActiveServer;
 import io.niowire.serversource.Event;
 import io.niowire.serversource.NioServerDefinition;
 import io.niowire.serversource.NioServerSource;
 import io.niowire.service.NioService;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -37,6 +40,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -138,10 +142,15 @@ public class NioSocketServerTest
 		//</editor-fold>
 
 		//<editor-fold defaultstate="collapsed" desc="Test Writing to client">
-		//Get our context (curtosy of the service object)
-		contextCaptor = ArgumentCaptor.forClass(Context.class);
-		verify(service).setContext(contextCaptor.capture());
-		Context context = contextCaptor.getValue();
+		//Get a context object from the NioConnection object serving us (using dodgy reflection)
+		//Warning this makes this a very brittle test, try not to do this too often
+		ActiveServer s = (ActiveServer) server.getServers().get(0);
+		Field f = s.getClass().getDeclaredField("connections");
+		f.setAccessible(true);
+		@SuppressWarnings("unchecked")
+		List<NioConnection> c = (List<NioConnection>) f.get(s);
+		Context context = c.get(0).getContext();
+		//THAT WAS SO HORRIBLE!
 
 		//Return true for us having data
 		when(serializer.hasData()).thenReturn(true);
@@ -366,10 +375,10 @@ public class NioSocketServerTest
 		server.updateServer(defs[1]);
 		server.updateServer(defs[2]);
 
-		//Wait for the servers to update
-		verify(services[0][1], timeout(100)).setContext(any(NioConnection.Context.class));
-		verify(services[1][1], timeout(100)).setContext(any(NioConnection.Context.class));
-		verify(services[2][1], timeout(100)).setContext(any(NioConnection.Context.class));
+		//Wait for the servers to update (check that a new instance is created)
+		verify(serviceFactories[0][1], timeout(100)).create(anyMapOf(String.class, Object.class));
+		verify(serviceFactories[1][1], timeout(100)).create(anyMapOf(String.class, Object.class));
+		verify(serviceFactories[2][1], timeout(100)).create(anyMapOf(String.class, Object.class));
 
 		//Check that the connections are still active
 		assertFalse("Connection 1 has died", sockets[0].isClosed());
@@ -447,10 +456,10 @@ public class NioSocketServerTest
 		serverPorts[4] = server.updateServer(defs[1]);
 		serverPorts[5] = server.updateServer(defs[2]);
 
-		//Wait for the servers to update
-		verify(services[0][0], timeout(100).times(2)).setContext(any(NioConnection.Context.class));
-		verify(services[1][0], timeout(100).times(2)).setContext(any(NioConnection.Context.class));
-		verify(services[2][0], timeout(100).times(2)).setContext(any(NioConnection.Context.class));
+		//Wait for the servers to update (check that a new instance is created)
+		verify(serviceFactories[0][0], timeout(100).times(2)).create(anyMapOf(String.class, Object.class));
+		verify(serviceFactories[1][0], timeout(100).times(2)).create(anyMapOf(String.class, Object.class));
+		verify(serviceFactories[2][0], timeout(100).times(2)).create(anyMapOf(String.class, Object.class));
 
 		//Attempt to connect the socket to the old ports (should fail)
 		try
@@ -645,7 +654,7 @@ public class NioSocketServerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test(timeout = 1000)
+	@Test(timeout = 100000000)
 	@SuppressWarnings("unchecked")
 	public void testExceptionDuringConnectionCreation() throws Exception
 	{
@@ -659,7 +668,7 @@ public class NioSocketServerTest
 
 		//Mock a factory which throws exceptions
 		NioObjectFactory<?> factory = mock(NioObjectFactory.class);
-		when(factory.create()).thenThrow(NioObjectCreationException.class);
+		when(factory.create(anyMap())).thenThrow(NioObjectCreationException.class);
 
 		//Build our first definition
 		def = new NioServerDefinition();
@@ -682,7 +691,7 @@ public class NioSocketServerTest
 		Socket con = new Socket(InetAddress.getLoopbackAddress(), serverPort);
 
 		//Wait for the factory to try to create the object
-		verify(factory, timeout(100)).create();
+		verify(factory, timeout(100)).create(anyMap());
 
 		//Make sure the connection was closed (no longer being interaced with server side)
 		assertEquals("The connection should have been immediately closed", -1, con.getInputStream().read());
@@ -834,6 +843,7 @@ public class NioSocketServerTest
 	 * @throws Exception
 	 */
 	@Test(timeout = 1000)
+	@SuppressWarnings("unchecked")
 	public void testServerSources() throws Exception
 	{
 		//<editor-fold defaultstate="collapsed" desc="Setup Server and Mocking">
@@ -870,20 +880,19 @@ public class NioSocketServerTest
 											 Collections.<NioServerDefinition, Event>emptyMap());
 
 		//This is a blocking server (we wait on the definition object)
-		when(source.isBlocking()).then(new Answer<Boolean>() {
-
+		when(source.isBlocking()).then(new Answer<Boolean>()
+		{
 			@Override
 			public Boolean answer(InvocationOnMock invocation) throws Throwable
 			{
 				//Wait for the lock to be fired
-				synchronized(lock)
+				synchronized (lock)
 				{
 					lock.wait();
 				}
 
 				return true;
 			}
-
 		});
 
 		//Create our server
@@ -951,7 +960,7 @@ public class NioSocketServerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test(timeout = 10000000)
+	@Test(timeout = 1000)
 	public void testDefaultFactories() throws Exception
 	{
 		//Get the factories
@@ -968,9 +977,12 @@ public class NioSocketServerTest
 
 		//Check that they recognize other objects of the same type
 		LineSerializer lineSerializer = new LineSerializer();
-		lineSerializer.configure(Collections.singletonMap("charset", Charset.defaultCharset().name()));
+		Injector<LineSerializer> injector1 = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", Charset.defaultCharset().name()));
+		injector1.inject(lineSerializer);
+
 		TimeoutInspector timeoutInspector = new TimeoutInspector();
-		timeoutInspector.configure(Collections.singletonMap("timeout", -1));
+		Injector<TimeoutInspector> injector2 = new Injector<TimeoutInspector>(TimeoutInspector.class, Collections.singletonMap("timeout", -1));
+		injector2.inject(timeoutInspector);
 
 		assertTrue(defaultSerializer.isInstance(lineSerializer));
 		assertTrue(defaultInspector.isInstance(timeoutInspector));

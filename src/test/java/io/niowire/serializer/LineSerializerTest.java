@@ -17,14 +17,18 @@
 package io.niowire.serializer;
 
 import io.niowire.data.NioPacket;
+import io.niowire.entities.Injector;
+import io.niowire.entities.NioObjectFactory;
 import io.niowire.server.NioConnection;
 import io.niowire.server.NioConnection.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.List;
-import java.util.Scanner;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.util.*;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -38,6 +42,11 @@ import static org.mockito.Mockito.*;
 public class LineSerializerTest
 {
 
+	/**
+	 * Tests that liens are serialized into bytes properly
+	 *
+	 * @throws Exception
+	 */
 	@Test(timeout = 1000)
 	public void testSerialize() throws Exception
 	{
@@ -54,11 +63,10 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", charset));
-		serializer.setContext(context);
 
-		//Quick test to make sure that the configuration we get is exactly what we put in
-		assertEquals("The returned configuration should be what we put in", serializer.getConfiguration(), Collections.singletonMap("charset", charset));
+		//Push through a configuration
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Allocate a buffer to hold the result
 		ByteBuffer buffer = ByteBuffer.allocate(100);
@@ -76,6 +84,11 @@ public class LineSerializerTest
 		assertArrayEquals("The returned data was not the expected result", expected, result);
 	}
 
+	/**
+	 * Tests that lines are deserialized properly
+	 *
+	 * @throws Exception
+	 */
 	@Test(timeout = 1000)
 	public void testDeserialize() throws Exception
 	{
@@ -92,8 +105,10 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", charset));
-		serializer.setContext(context);
+
+		//Push through a configuration
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Wrap the message in a buffer
 		ByteBuffer data = ByteBuffer.wrap(message.getBytes(charset));
@@ -108,6 +123,12 @@ public class LineSerializerTest
 		assertEquals("The wrong data was returned", expected, packets.get(0).getData());
 	}
 
+	/**
+	 * Tests that multiple lines which are all injected at once serialize
+	 * correctly
+	 *
+	 * @throws Exception
+	 */
 	@Test(timeout = 1000)
 	public void testMultiLineDeserialize() throws Exception
 	{
@@ -126,8 +147,10 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", charset));
-		serializer.setContext(context);
+
+		//Push through a configuration
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Wrap the message in a buffer
 		ByteBuffer data = ByteBuffer.wrap(message.getBytes(charset));
@@ -170,8 +193,10 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", charset));
-		serializer.setContext(context);
+
+		//Push through a configuration
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Wrap the message in a buffer
 		ByteBuffer data = ByteBuffer.wrap(message.getBytes(charset));
@@ -217,8 +242,10 @@ public class LineSerializerTest
 
 			//Build our serializer
 			LineSerializer serializer = new LineSerializer();
-			serializer.configure(Collections.singletonMap("charset", charset));
-			serializer.setContext(context);
+
+			//Push through a configuration
+			Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+			injector.inject(serializer, Collections.singletonMap("context", context));
 
 			//Wrap the message in a buffer
 			ByteBuffer data = ByteBuffer.wrap((testString + "\n").getBytes(charset));
@@ -255,8 +282,10 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", charset));
-		serializer.setContext(context);
+
+		//Push through a configuration
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Allocate a buffer to hold the result
 		ByteBuffer buffer = ByteBuffer.allocate(100);
@@ -295,8 +324,10 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", charset));
-		serializer.setContext(context);
+
+		//Push through a configuration
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Wrap the message in a buffer
 		ByteBuffer data = ByteBuffer.wrap(message.getBytes(charset));
@@ -345,8 +376,10 @@ public class LineSerializerTest
 
 		//Build our serializer
 		LineSerializer serializer = new LineSerializer();
-		serializer.configure(Collections.singletonMap("charset", charset));
-		serializer.setContext(context);
+
+		//Push through a configuration
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 
 		//Get our packets
 		List<NioPacket> packets = serializer.deserialize(input);
@@ -356,5 +389,200 @@ public class LineSerializerTest
 			//Check that each line is the expected result
 			assertEquals(expected[i], packets.get(i).getData());
 		}
+	}
+
+	/**
+	 * Tests that raw data is added to the packets correctly
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testRawDataDeserialize() throws Exception
+	{
+		//Using UTF-8
+		String charset = "utf-8";
+
+		//Set up some test data and expected results
+		String message = "Hello World, This is a test!\n";
+		String expected = "Hello World, This is a test!";
+		byte[] expectedRaw = message.getBytes(charset);
+
+		//Mock a context
+		Context context = mock(NioConnection.Context.class);
+		when(context.getUid()).thenReturn("TEST");
+
+		//Build our serializer
+		LineSerializer serializer = new LineSerializer();
+
+		//Build a config
+		HashMap<String, Object> config = new HashMap<String, Object>(2);
+		config.put("charset", charset);
+		config.put("raw", true);
+
+		//Push through a configuration
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, config);
+		injector.inject(serializer, Collections.singletonMap("context", context));
+
+		//Wrap the message in a buffer
+		ByteBuffer data = ByteBuffer.wrap(message.getBytes(charset));
+
+		//Try to deserialize it
+		List<NioPacket> packets = serializer.deserialize(data);
+
+		//Make sure only one packet was returned
+		assertEquals("Only a single packet should have been returned", 1, packets.size());
+
+		//Check that the correct data was returned
+		assertEquals("The wrong data was returned", expected, packets.get(0).getData());
+		assertArrayEquals("The raw data returned was not correct", expectedRaw, packets.get(0).getRawData());
+		assertTrue("The packet did not report itself as raw", packets.get(0).isRaw());
+	}
+
+	/**
+	 * Test that when the raw data flag is set on the packet that the serializer
+	 * uses the raw data instead of the actual data
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testRawDataSerialize() throws Exception
+	{
+		//Using UTF-8
+		String charset = "utf-8";
+
+		//Get some random bytes to test with
+		byte[] expected = new byte[100];
+		Random r = new Random();
+		r.nextBytes(expected);
+
+		//Set up some test data
+		NioPacket message = new NioPacket("TEST", null, true, expected);
+
+		//Mock a context
+		Context context = mock(NioConnection.Context.class);
+		when(context.getUid()).thenReturn("TEST");
+
+		//Build our serializer
+		LineSerializer serializer = new LineSerializer();
+
+		//Get a config
+		HashMap<String, Object> config = new HashMap<String, Object>(2);
+		config.put("charset", charset);
+		config.put("raw", true);
+
+		//Push through a configuration
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, config);
+		injector.inject(serializer, Collections.singletonMap("context", context));
+
+		//Allocate a buffer to hold the result
+		ByteBuffer buffer = ByteBuffer.allocate(200);
+
+		//Serialize the data and read it back from the serializer
+		serializer.serialize(message);
+		serializer.read(buffer);
+
+		//Get the buffer ready for reading and read the results
+		buffer.flip();
+		byte[] result = new byte[buffer.remaining()];
+		buffer.get(result);
+
+		//Make sure that what we got back was what we expected
+		assertArrayEquals("The returned data was not the expected result", expected, result);
+	}
+
+	/**
+	 * Tests that if the serializer is not setup as a raw serializer, it ignores
+	 * raw data
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testNonRawOmitsRawSerialize() throws Exception
+	{
+		//Using UTF-8
+		String charset = "utf-8";
+
+		//Get some data to test with
+		String input = "Hello world!";
+		byte[] expected = "Hello world!\n".getBytes(charset);
+
+		//Set up some test data
+		NioPacket message = new NioPacket("TEST", input, true, new byte[0]);
+
+		//Mock a context
+		Context context = mock(NioConnection.Context.class);
+		when(context.getUid()).thenReturn("TEST");
+
+		//Build our serializer
+		LineSerializer serializer = new LineSerializer();
+
+		//Get a config
+		HashMap<String, Object> config = new HashMap<String, Object>(2);
+		config.put("charset", charset);
+		config.put("raw", false);
+
+		//Push through a configuration
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, config);
+		injector.inject(serializer, Collections.singletonMap("context", context));
+
+		//Allocate a buffer to hold the result
+		ByteBuffer buffer = ByteBuffer.allocate(200);
+
+		//Serialize the data and read it back from the serializer
+		serializer.serialize(message);
+		serializer.read(buffer);
+
+		//Get the buffer ready for reading and read the results
+		buffer.flip();
+		byte[] result = new byte[buffer.remaining()];
+		buffer.get(result);
+
+		//Make sure that what we got back was what we expected
+		assertArrayEquals("The returned data was not the expected result", expected, result);
+	}
+
+	/**
+	 * Tests that if the serializer is not setup as a raw serializer , it
+	 * ignores raw data
+	 */
+	@Test
+	public void testNonRawOmitsRawDeserialize() throws Exception
+	{
+		//Using UTF-8
+		String charset = "utf-8";
+
+		//Set up some test data and expected results
+		String message = "Hello World, This is a test!\n";
+		String expected = "Hello World, This is a test!";
+
+		//Mock a context
+		Context context = mock(NioConnection.Context.class);
+		when(context.getUid()).thenReturn("TEST");
+
+		//Build our serializer
+		LineSerializer serializer = new LineSerializer();
+
+		//Build a config
+		HashMap<String, Object> config = new HashMap<String, Object>(2);
+		config.put("charset", charset);
+		config.put("raw", false);
+
+		//Push through a configuration
+		Injector<LineSerializer> injector = new Injector<LineSerializer>(LineSerializer.class, config);
+		injector.inject(serializer, Collections.singletonMap("context", context));
+
+		//Wrap the message in a buffer
+		ByteBuffer data = ByteBuffer.wrap(message.getBytes(charset));
+
+		//Try to deserialize it
+		List<NioPacket> packets = serializer.deserialize(data);
+
+		//Make sure only one packet was returned
+		assertEquals("Only a single packet should have been returned", 1, packets.size());
+
+		//Check that the correct data was returned
+		assertEquals("The wrong data was returned", expected, packets.get(0).getData());
+		assertNull("The raw data was returned when it should not have", packets.get(0).getRawData());
+		assertFalse("The packet reported itself as raw", packets.get(0).isRaw());
 	}
 }

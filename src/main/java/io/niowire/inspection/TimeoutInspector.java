@@ -20,7 +20,7 @@ import io.niowire.data.NioPacket;
 import io.niowire.server.NioConnection.Context;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
-import java.util.Map;
+import javax.inject.Inject;
 
 /**
  * This is a simple Inspector which will timeout after a message has not been
@@ -32,11 +32,12 @@ public class TimeoutInspector implements NioInspector
 {
 
 	//Our context
-	private Context context = null;
+	@Inject
+	protected Context context = null;
 	private long lastMessage = System.currentTimeMillis();
+	@Inject
 	private long timeout;
 	private boolean open = true;
-	private Map<String, ? extends Object> configuration;
 
 	/**
 	 * We use the UID generator to generate our UID based on the remoteAddress
@@ -86,36 +87,8 @@ public class TimeoutInspector implements NioInspector
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void setContext(Context context)
-	{
-		this.context = context;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void configure(Map<String, ? extends Object> configuration) throws Exception
-	{
-		timeout = ((Number) configuration.get("timeout")).longValue();
-		this.configuration = configuration;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
 	public void close() throws IOException
 	{
 		open = false;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public Map<String, ? extends Object> getConfiguration()
-	{
-		return configuration;
 	}
 }

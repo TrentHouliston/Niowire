@@ -1,6 +1,8 @@
 package io.niowire.serializer;
 
 import io.niowire.data.NioPacket;
+import io.niowire.entities.Injector;
+import io.niowire.entities.NioObjectFactory;
 import io.niowire.server.NioConnection;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -37,8 +39,10 @@ public class JsonSerializerTest
 
 		//Build our serializer
 		serializer = new JsonSerializer();
-		serializer.configure(Collections.singletonMap("charset", charset));
-		serializer.setContext(context);
+
+		//Push through a configuration
+		Injector<JsonSerializer> injector = new Injector<JsonSerializer>(JsonSerializer.class, Collections.singletonMap("charset", charset));
+		injector.inject(serializer, Collections.singletonMap("context", context));
 	}
 
 	/**
@@ -121,7 +125,38 @@ public class JsonSerializerTest
 	}
 
 	/**
-	 * Test Deserializing POJOs works as expected
+	 * Test deserializing into POJOs works as expected
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testDeserializePojo() throws Exception
+	{
+		//Write out our input string
+		String input = "{\"dog\":\"meow\",\"cat\":\"woof\"}\n";
+
+		HashMap<String, String> newConfig = new HashMap<String, String>(2);
+		newConfig.put("charset", charset);
+		newConfig.put("pojoClass", JsonSerializerPojoTest.class.getName());
+
+		//Push through a new configuration
+		Injector<JsonSerializer> injector = new Injector<JsonSerializer>(JsonSerializer.class, newConfig);
+		injector.inject(serializer);
+
+		//Make a buffer
+		ByteBuffer buff = ByteBuffer.wrap(input.getBytes(charset));
+
+		//Deserialize our packets
+		List<NioPacket> packets = serializer.deserialize(buff);
+
+		assertEquals("There should be 1 packet", 1, packets.size());
+		assertTrue("The packet shoudl be our test object", packets.get(0).getData() instanceof JsonSerializerPojoTest);
+		assertEquals("The dog should say meow", "meow", ((JsonSerializerPojoTest) packets.get(0).getData()).dog);
+		assertEquals("The cat should say woof", "woof", ((JsonSerializerPojoTest) packets.get(0).getData()).cat);
+	}
+
+	/**
+	 * Test Deserializing into hashmaps works as expected
 	 *
 	 * @throws Exception
 	 */
@@ -272,7 +307,7 @@ public class JsonSerializerTest
 	/**
 	 * Static class for testing the serializing of POJOs
 	 */
-	private static class JsonSerializerPojoTest
+	public static class JsonSerializerPojoTest
 	{
 
 		public String dog = "woof";

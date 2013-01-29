@@ -24,6 +24,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +55,10 @@ public abstract class DelimitedSerializer implements NioSerializer
 	//This buffer is allocated as needed if there is any leftover data (split packets)
 	private ByteBuffer residual = null;
 	private boolean open = true;
+	@Inject
 	protected Context context = null;
+	@Inject
+	protected boolean raw = false;
 	private Queue<ByteBuffer> sendQueue = new LinkedList<ByteBuffer>();
 	private ByteBuffer rebuffer = null;
 
@@ -201,6 +205,12 @@ public abstract class DelimitedSerializer implements NioSerializer
 
 			//Add these buffers to the queue
 			sendQueue.add(buff);
+
+			//If this isn't a raw packet then
+			if (!raw || !packet.isRaw())
+			{
+				sendQueue.add(ByteBuffer.wrap(getDelimiter()));
+			}
 		}
 		catch (NioInvalidDataException ex)
 		{
@@ -245,13 +255,11 @@ public abstract class DelimitedSerializer implements NioSerializer
 
 		//Read as many of our buffers into the passed buffer as we can
 		while (!sendQueue.isEmpty()
-			   && buffer.remaining() >= sendQueue.peek().remaining() + getDelimiter().length)
+			   && buffer.remaining() >= sendQueue.peek().remaining())
 		{
 			ByteBuffer bb = sendQueue.poll();
 			read += bb.remaining();
-			read += getDelimiter().length;
 			buffer.put(bb);
-			buffer.put(getDelimiter());
 		}
 
 		//Read as much of our remaining buffer as we can
@@ -286,15 +294,6 @@ public abstract class DelimitedSerializer implements NioSerializer
 	public boolean isOpen()
 	{
 		return open;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void setContext(Context context)
-	{
-		this.context = context;
 	}
 
 	/**

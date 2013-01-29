@@ -16,268 +16,206 @@
  */
 package io.niowire.entities;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
+import java.util.HashMap;
+import javax.inject.Inject;
+import javax.inject.Named;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
 /**
+ * Unit tests for the {@link NioObjectFactory}
  *
- * @author trent
+ * @author Trent Houliston
  */
 public class NioObjectFactoryTest
 {
 
 	/**
-	 * Test that objects can be created from their class name and a
-	 * configuration
+	 * Tests that creating objects works as expected
 	 *
 	 * @throws Exception
 	 */
 	@Test(timeout = 1000)
-	public void testObjectCreationFromString() throws Exception
+	public void testCreate() throws Exception
 	{
-		//Build a new factory
-		NioObjectFactory<NioObjectImpl> factory = new NioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.<String, NioObject>emptyMap());
+		//Create some data
+		HashMap<String, String> testData = new HashMap<String, String>(4);
+		testData.put("superPrivate", "TEST_SUPER_PRIVATE");
+		testData.put("superProtected", "TEST_SUPER_PROTECTED");
+		testData.put("superDefault", "TEST_SUPER_DEFAULT");
+		testData.put("superPublic", "TEST_SUPER_PUBLIC");
+		testData.put("subClassValue", "TEST_SUB_CLASS_VALUE");
+		testData.put("namedValue", "TEST_NOT_NAMED_VALUE");
 
-		//Try to create an object
-		NioObjectImpl obj = factory.create();
+		//Build a factory1 and create an object
+		NioObjectFactory<SubClass> factory = new NioObjectFactory<SubClass>(SubClass.class, testData);
+		SubClass obj = factory.create();
 
-		//Check the class is correct
-		assertEquals("The class of this object should be the class that was passed in", Class.forName(NioObjectImpl.class.getName()), obj.getClass());
+		//Check that all the fields were injected properly (we have to cast to the super object to access the private member)
+		assertEquals("The private injection did not have the expected result", "TEST_SUPER_PRIVATE", ((TestClass) obj).superPrivate);
+		assertEquals("The protected injection did not have the expected result", "TEST_SUPER_PROTECTED", obj.superProtected);
+		assertEquals("The default injection did not have the expected result", "TEST_SUPER_DEFAULT", obj.superDefault);
+		assertEquals("The public injection did not have the expected result", "TEST_SUPER_PUBLIC", obj.superPublic);
+		assertEquals("The subclass injection did not have the expected result", "TEST_SUB_CLASS_VALUE", obj.subClassValue);
+
+		//Check that the init method ran properly
+		assertEquals("The superclass init method did not run", "TEST_NOT_NAMED_VALUE", obj.testInit);
+		assertEquals("The subclass init method did not run", "TEST_NOT_NAMED_VALUE", obj.subClassInit);
 	}
 
 	/**
-	 * Test that objects can be created from their class object and a
-	 * configuration
-	 *
-	 * @throws Exception
-	 */
-	@Test(timeout = 1000)
-	public void testObjectCreationFromClass() throws Exception
-	{
-		//Build a new factory
-		NioObjectFactory<NioObjectImpl> factory = new NioObjectFactory<NioObjectImpl>(NioObjectImpl.class, Collections.<String, NioObject>emptyMap());
-
-		//Try to create an object
-		NioObjectImpl obj = factory.create();
-
-		//Check the class is correct
-		assertEquals("The class of this object should be the class that was passed in", NioObjectImpl.class, obj.getClass());
-	}
-
-	/**
-	 * Test that if there is an error setting up/configuring the object a
-	 * wrapped exception is thrown
-	 *
-	 * @throws Exception ex
-	 */
-	@Test(timeout = 1000)
-	public void testInvalidObjectCreationExceptionWrapping() throws Exception
-	{
-		try
-		{
-			//Make a new object
-			NioObjectFactory<NioObjectImpl> factory = new NioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.singletonMap("exception", new Object()));
-
-			//Try to make a new object (should fail since the map contains something)
-			//This was set up in the Impl class
-			factory.create();
-
-			//If we reached here, an exception was not thrown. Fail the test.
-			fail("An NioObjectCreationException should have been thrown during configuration");
-		}
-		catch (NioObjectCreationException ex)
-		{
-			assertNotNull(ex);
-		}
-	}
-
-	/**
-	 * Test that if we try to construct something that's not a NioObject it will
-	 * fail
-	 *
-	 * @throws Exception
-	 */
-	@Test(timeout = 1000)
-	public void testNonNioObjectCreation() throws Exception
-	{
-		try
-		{
-			//Make a new object
-			NioObjectFactory<NioObject> factory = new NioObjectFactory<NioObject>("java.lang.String", Collections.singletonMap("foo", new Object()));
-			factory.create();
-			fail("An exception should have been thrown as String is not a NioObject");
-		}
-		catch (NioObjectCreationException ex)
-		{
-			//Make sure that the exception that was thrown was a real exception and not just a re wrap
-			assertTrue(ex.getCause() == null);
-		}
-	}
-
-	/**
-	 * Test that runtime exceptions are wrapped when they are thrown into
-	 * checked exceptions of type {@link NioObjectCreationException}
-	 *
-	 * @throws Exception
-	 */
-	@Test(timeout = 1000)
-	public void testRuntimeExceptionsAreWrapped() throws Exception
-	{
-		try
-		{
-			//Make a new object
-			NioObjectFactory<NioObject> factory = new NioObjectFactory<NioObject>(NioObjectImpl.class.getName(), Collections.singletonMap("runtime", new Object()));
-			factory.create();
-			fail("An exception should have been thrown here (a wrapped runtime exception)");
-		}
-		catch (NioObjectCreationException ex)
-		{
-			//Check the cause was a runtime exception
-			assertTrue(ex.getCause() instanceof RuntimeException);
-		}
-	}
-
-	/**
-	 * Tests that a subclass of the object that this factory creates is not
-	 * considered an object it creates. This is important as otherwise a
-	 * LineSerializer would be considered the same as a JsonSerializer and would
-	 * not update when changed.
-	 *
-	 * @throws Exception
-	 */
-	@Test(timeout = 1000)
-	public void testSubclassIsNotConsideredInstance() throws Exception
-	{
-		//Build a new factory
-		NioObjectFactory<NioObjectImpl> factory = new NioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.<String, NioObject>emptyMap());
-
-		//Create a subclass of this object
-		NioObjectImplExt ext = new NioObjectImplExt();
-		ext.configure(Collections.<String, Object>emptyMap());
-
-		//Check that it's not considered an instance
-		assertFalse("The subclass should not be considered an instance of this factorys object", factory.isInstance(ext));
-	}
-
-	/**
-	 * Tests the isInstance method (checks that objects created by this (or that
-	 * could be created by this) return true, and other objects return false
+	 * Tests that the isInstance method works as expected
 	 *
 	 * @throws Exception
 	 */
 	@Test(timeout = 1000)
 	public void testIsInstance() throws Exception
 	{
-		//Build a new factory
-		NioObjectFactory<NioObjectImpl> factory = new NioObjectFactory<NioObjectImpl>(NioObjectImpl.class.getName(), Collections.<String, NioObject>emptyMap());
+		//Create some test data
+		HashMap<String, String> testData1 = new HashMap<String, String>(6);
+		testData1.put("superPrivate", "TEST_SUPER_PRIVATE");
+		testData1.put("superProtected", "TEST_SUPER_PROTECTED");
+		testData1.put("superDefault", "TEST_SUPER_DEFAULT");
+		testData1.put("superPublic", "TEST_SUPER_PUBLIC");
+		testData1.put("subClassValue", "TEST_SUB_CLASS_VALUE");
+		testData1.put("namedValue", "TEST_NOT_NAMED_VALUE");
 
-		//Create an object
-		NioObject obj1 = factory.create();
+		HashMap<String, String> testData2 = new HashMap<String, String>(6);
+		testData2.put("superPrivate", "TEST_SUPER_PRIVATE_2");
+		testData2.put("superProtected", "TEST_SUPER_PROTECTED_2");
+		testData2.put("superDefault", "TEST_SUPER_DEFAULT_2");
+		testData2.put("superPublic", "TEST_SUPER_PUBLIC_2");
+		testData2.put("subClassValue", "TEST_SUB_CLASS_VALUE_2");
+		testData2.put("namedValue", "TEST_NOT_NAMED_VALUE_2");
 
-		//Create an object manually
-		NioObject obj2 = new NioObjectImpl();
-		obj2.configure(Collections.<String, Object>emptyMap());
+		//Build a factory using the superclass and data 1
+		NioObjectFactory<TestClass> factory1 = new NioObjectFactory<TestClass>(TestClass.class, testData1);
+		TestClass obj1 = factory1.create();
 
-		//Create a null object
-		NioObject obj3 = null;
+		//Build a factory using the superclass and data 2
+		NioObjectFactory<TestClass> factory2 = new NioObjectFactory<TestClass>(TestClass.class, testData2);
+		TestClass obj2 = factory2.create();
 
-		//Create a random object
-		NioObject obj4 = new NioObject()
-		{
-			private Map<String, ? extends Object> configuration;
+		//Build a factory using the subclass and data 1
+		NioObjectFactory<SubClass> factory3 = new NioObjectFactory<SubClass>(SubClass.class, testData1);
+		TestClass obj3 = factory3.create();
 
-			@Override
-			public void configure(Map<String, ? extends Object> configuration) throws Exception
-			{
-				this.configuration = configuration;
-			}
+		//Build a factory using the subclass and data 2
+		NioObjectFactory<SubClass> factory4 = new NioObjectFactory<SubClass>(SubClass.class, testData2);
+		TestClass obj4 = factory4.create();
 
-			@Override
-			public Map<String, ? extends Object> getConfiguration()
-			{
-				return configuration;
-			}
+		//Hand build a superclass using data 1
+		TestClass obj5 = new TestClass();
+		Injector<TestClass> injector5 = new Injector<TestClass>(TestClass.class, testData1);
+		injector5.inject(obj5);
 
-			@Override
-			public void close() throws IOException
-			{
-			}
-		};
-		obj4.configure(Collections.<String, Object>emptyMap());
+		//Hand build a superclass using data 2
+		TestClass obj6 = new TestClass();
+		Injector<TestClass> injector6 = new Injector<TestClass>(TestClass.class, testData2);
+		injector6.inject(obj6);
 
-		//Check that all of our objects behave as expected
-		assertTrue(factory.isInstance(obj1));
-		assertTrue(factory.isInstance(obj2));
-		assertFalse(factory.isInstance(obj3));
-		assertFalse(factory.isInstance(obj4));
+		//Hand build a subclass using data 1
+		SubClass obj7 = new SubClass();
+		Injector<SubClass> injector7 = new Injector<SubClass>(SubClass.class, testData1);
+		injector7.inject(obj7);
+
+		//Hand build a subclass using data 2
+		SubClass obj8 = new SubClass();
+		Injector<SubClass> injector8 = new Injector<SubClass>(SubClass.class, testData2);
+		injector8.inject(obj8);
+
+		//Test the results from the 1st factory
+		assertTrue("The object the factory created should be an instance", factory1.isInstance(obj1));
+		assertFalse("This object has a different configuration, should be false", factory1.isInstance(obj2));
+		assertFalse("This object has is a subclass, should be false", factory1.isInstance(obj3));
+		assertFalse("This object has a different configuration and is a subclass, should be false", factory1.isInstance(obj4));
+		assertTrue("This object is identical apart from not being made by the factory, should be true", factory1.isInstance(obj5));
+		assertFalse("This object has a different configuration, should be false", factory1.isInstance(obj6));
+		assertFalse("This object has is a subclass, should be false", factory1.isInstance(obj7));
+		assertFalse("This object has a different configuration and is a subclass, should be false", factory1.isInstance(obj8));
+
+		//Test the results from the 2nd factory
+		assertFalse("This object has a different configuration, should be false", factory2.isInstance(obj1));
+		assertTrue("The object the factory created should be an instance", factory2.isInstance(obj2));
+		assertFalse("This object has a different configuration and is a subclass, should be false", factory2.isInstance(obj3));
+		assertFalse("This object has is a subclass, should be false", factory2.isInstance(obj4));
+		assertFalse("This object has a different configuration, should be false", factory2.isInstance(obj5));
+		assertTrue("This object is identical apart from not being made by the factory, should be true", factory2.isInstance(obj6));
+		assertFalse("This object has a different configuration and is a subclass, should be false", factory2.isInstance(obj7));
+		assertFalse("This object has is a subclass, should be false", factory2.isInstance(obj8));
+
+		//Test the results from the 3rd factory
+		assertFalse("This object has is a superclass, should be false", factory3.isInstance(obj1));
+		assertFalse("This object has a different configuration and is a superclass, should be false", factory3.isInstance(obj2));
+		assertTrue("The object the factory created should be an instance", factory3.isInstance(obj3));
+		assertFalse("This object has a different configuration, should be false", factory3.isInstance(obj4));
+		assertFalse("This object has is a superclass, should be false", factory3.isInstance(obj5));
+		assertFalse("This object has a different configuration and is a superclass, should be false", factory3.isInstance(obj6));
+		assertTrue("This object is identical apart from not being made by the factory, should be true", factory3.isInstance(obj7));
+		assertFalse("This object has a different configuration, should be false", factory3.isInstance(obj8));
+
+		//Test the results from the 4th factory
+		assertFalse("This object has a different configuration and is a subclass, should be false", factory4.isInstance(obj1));
+		assertFalse("This object has is a subclass, should be false", factory4.isInstance(obj2));
+		assertFalse("This object has a different configuration, should be false", factory4.isInstance(obj3));
+		assertTrue("The object the factory created should be an instance", factory4.isInstance(obj4));
+		assertFalse("This object has a different configuration and is a subclass, should be false", factory4.isInstance(obj5));
+		assertFalse("This object has is a subclass, should be false", factory4.isInstance(obj6));
+		assertFalse("This object has a different configuration, should be false", factory4.isInstance(obj7));
+		assertTrue("This object is identical apart from not being made by the factory, should be true", factory4.isInstance(obj8));
 	}
 
 	/**
-	 * This class is a class which is used to make a basic NioObject to use
+	 * This is a test object which has annotations in it to facilitate the
+	 * injection tests.
 	 */
-	public static class NioObjectImpl implements NioObject
+	public static class TestClass
 	{
 
-		private Map<String, ? extends Object> configuration;
+		@Inject
+		private String superPrivate = "DEFAULT_SUPER_PRIVATE";
+		@Inject
+		protected String superProtected = "DEFAULT_SUPER_PROTECTED";
+		@Inject
+		String superDefault = "DEFAULT_SUPER_DEFAULT";
+		@Inject
+		public String superPublic = "DEFAULT_SUPER_PUBLIC";
+		@Inject
+		@Named(value = "namedValue")
+		public String notNamedValue = "DEFAULT_NOT_NAMED_VALUE";
+		public String ignoreMe = "DEFAULT_IGNORE_ME";
+		public String testInit = "DEFAULT_TEST_INIT";
+		private String testPrivateInit;
 
-		/**
-		 * Configure the object. If the map contains the key "exception" then it
-		 * will throw an {@link Exception}, if it contains the key "runtime" it
-		 * will throw a {@link RuntimeException}
-		 *
-		 * @param configuration a configuration containing either exception,
-		 *                            runtime or nothing.
-		 *
-		 * @throws Exception        if the configuration has the "exception" key
-		 * @throws RuntimeException if the configuration has the "runtime" key
-		 */
-		@Override
-		public void configure(Map<String, ? extends Object> configuration) throws Exception
+		@Initialize
+		public void testInit()
 		{
-			this.configuration = configuration;
-
-			//If they give us an exception key throw an exception
-			if (configuration.containsKey("exception"))
-			{
-				throw new Exception();
-			}
-			//If they give us a runtime key then throw a runtime exception
-			if (configuration.containsKey("runtime"))
-			{
-				throw new RuntimeException();
-			}
+			this.testInit = this.notNamedValue;
 		}
 
-		/**
-		 * We don't need to do anything for close
-		 *
-		 * @throws IOException
-		 */
-		@Override
-		public void close() throws IOException
+		@Initialize
+		private void testPrivateInit()
 		{
-			//Do nothing
-		}
-
-		/**
-		 * {@inheritDoc}
-		 */
-		@Override
-		public Map<String, ? extends Object> getConfiguration()
-		{
-			return configuration;
+			this.testPrivateInit = this.notNamedValue;
 		}
 	}
 
 	/**
-	 * An extention of the NioObjectImpl class to test that subclasses are not
-	 * considered to be superclasses
+	 * This is a subclass of the above class which is used to test the cases
+	 * when subclasses are involved
 	 */
-	private static class NioObjectImplExt extends NioObjectImpl
+	public static class SubClass extends TestClass
 	{
+
+		@Inject
+		public String subClassValue = "DEFAULT_SUB_CLASS_VALUE";
+		private String subClassInit = "DEFAULT_SUB_CLASS_INIT";
+
+		@Initialize
+		public void subClassInit()
+		{
+			this.subClassInit = this.notNamedValue;
+		}
 	}
 }
