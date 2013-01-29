@@ -85,8 +85,15 @@ public class LineSerializer extends DelimitedSerializer
 		//Deserialize this
 		Object data = deserializeString(str);
 
-		//Return a new one element list
-		return Collections.singletonList(new NioPacket(context.getUid(), data));
+		//If we are adding the raw data
+		if (raw)
+		{
+			return Collections.singletonList(new NioPacket(context.getUid(), data, true, (str + new String(getDelimiter(), charset)).getBytes(charset)));
+		}
+		else
+		{
+			return Collections.singletonList(new NioPacket(context.getUid(), data));
+		}
 	}
 
 	/**
@@ -102,13 +109,27 @@ public class LineSerializer extends DelimitedSerializer
 	@Override
 	protected ByteBuffer serializeBlob(NioPacket packet) throws NioInvalidDataException
 	{
-		try
+		//If we have null raw data
+		if (raw && packet.isRaw() && packet.getRawData() == null)
 		{
-			return ENCODER.encode(CharBuffer.wrap(serializeString(packet)));
+			return ByteBuffer.allocate(0);
 		}
-		catch (CharacterCodingException ex)
+		//If we have raw data
+		else if (raw && packet.isRaw())
 		{
-			throw new NioInvalidDataException(ex);
+			return ByteBuffer.wrap(packet.getRawData());
+		}
+		//Otherwise behave as normal
+		else
+		{
+			try
+			{
+				return ENCODER.encode(CharBuffer.wrap(serializeString(packet)));
+			}
+			catch (CharacterCodingException ex)
+			{
+				throw new NioInvalidDataException(ex);
+			}
 		}
 	}
 

@@ -57,6 +57,8 @@ public abstract class DelimitedSerializer implements NioSerializer
 	private boolean open = true;
 	@Inject
 	protected Context context = null;
+	@Inject
+	protected boolean raw = false;
 	private Queue<ByteBuffer> sendQueue = new LinkedList<ByteBuffer>();
 	private ByteBuffer rebuffer = null;
 
@@ -203,6 +205,12 @@ public abstract class DelimitedSerializer implements NioSerializer
 
 			//Add these buffers to the queue
 			sendQueue.add(buff);
+
+			//If this isn't a raw packet then
+			if (!raw || !packet.isRaw())
+			{
+				sendQueue.add(ByteBuffer.wrap(getDelimiter()));
+			}
 		}
 		catch (NioInvalidDataException ex)
 		{
@@ -247,13 +255,11 @@ public abstract class DelimitedSerializer implements NioSerializer
 
 		//Read as many of our buffers into the passed buffer as we can
 		while (!sendQueue.isEmpty()
-			   && buffer.remaining() >= sendQueue.peek().remaining() + getDelimiter().length)
+			   && buffer.remaining() >= sendQueue.peek().remaining())
 		{
 			ByteBuffer bb = sendQueue.poll();
 			read += bb.remaining();
-			read += getDelimiter().length;
 			buffer.put(bb);
-			buffer.put(getDelimiter());
 		}
 
 		//Read as much of our remaining buffer as we can
