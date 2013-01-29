@@ -375,11 +375,10 @@ public class NioSocketServerTest
 		server.updateServer(defs[1]);
 		server.updateServer(defs[2]);
 
-		//Wait for the servers to update
-		//TODO work out a way to check when the server has updated
-//		verify(services[0][1], timeout(100)).setContext(any(NioConnection.Context.class));
-//		verify(services[1][1], timeout(100)).setContext(any(NioConnection.Context.class));
-//		verify(services[2][1], timeout(100)).setContext(any(NioConnection.Context.class));
+		//Wait for the servers to update (check that a new instance is created)
+		verify(serviceFactories[0][1], timeout(100)).create(anyMapOf(String.class, Object.class));
+		verify(serviceFactories[1][1], timeout(100)).create(anyMapOf(String.class, Object.class));
+		verify(serviceFactories[2][1], timeout(100)).create(anyMapOf(String.class, Object.class));
 
 		//Check that the connections are still active
 		assertFalse("Connection 1 has died", sockets[0].isClosed());
@@ -457,11 +456,10 @@ public class NioSocketServerTest
 		serverPorts[4] = server.updateServer(defs[1]);
 		serverPorts[5] = server.updateServer(defs[2]);
 
-		//Wait for the servers to update
-		//TODO work out a way to check when the server has updated
-//		verify(services[0][0], timeout(100).times(2)).setContext(any(NioConnection.Context.class));
-//		verify(services[1][0], timeout(100).times(2)).setContext(any(NioConnection.Context.class));
-//		verify(services[2][0], timeout(100).times(2)).setContext(any(NioConnection.Context.class));
+		//Wait for the servers to update (check that a new instance is created)
+		verify(serviceFactories[0][0], timeout(100).times(2)).create(anyMapOf(String.class, Object.class));
+		verify(serviceFactories[1][0], timeout(100).times(2)).create(anyMapOf(String.class, Object.class));
+		verify(serviceFactories[2][0], timeout(100).times(2)).create(anyMapOf(String.class, Object.class));
 
 		//Attempt to connect the socket to the old ports (should fail)
 		try
