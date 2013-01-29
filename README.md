@@ -6,14 +6,14 @@ To implement your own server, you need a Serializer, an Inspector, and one or mo
 
 ```java
 //Make a service
-NioObjectFactory<NioService> service = new ReflectiveNioObjectFactory(EchoService.class);
+NioObjectFactory<NioService> service = new NioObjectFactory(EchoService.class);
 
 //Create a server definition
 NioServerDefinition def = new NioServerDefinition();
 def.setId("SERVERX");
 def.setName("Super Awesome Server");
 def.setPort(12345);
-def.setServiceFactories(collections.singletonList(service)));
+def.setServiceFactories(Collections.singletonList(service)));
 
 //Make a server
 NioSocketServer server = new NioSocketServer();
@@ -73,7 +73,7 @@ The directory server source uses JSON files which are stored in a directory on t
 	"inspectorFactory" : {
 		"className" : "io.niowire.inspection.TimeoutInspector"
 		"configuration" : {
-			"timeout":"-1"
+			"timeout":-1
 		}
 	},
 
@@ -102,7 +102,7 @@ The LineSerializer is a specialization of the DelimitedSerializer, it looks for 
 The Json serializer is a specialized line serializer which is used to parse incoming Json objects into java objects. It will default to parsing these objects into a LinkedHashMap, however if another class is provided it will parse them into that object instead.
 ####Split Serializer
     io.niowire.serializer.SplitSerializer
-*Coming in a future version*
+    
 This serializer is one which is made up of two other serializers combined. It will use one of these serializers for all the serialization operations, and the other for deserialization.
 ####SSL Serializer
     io.niowire.serializer.SSLSerializer
@@ -154,12 +154,9 @@ The aggregator service is the opposite of a repeater service. Instead of taking 
 
 ##Future Versions
 The following changes are coming in future versions, Note that the API for Niowire is not considered stable yet and may change at any time (although the changes should become more and more minor and will be considered stable by 1.0)
-
-- Moving to an annotations based configuration and context injection (rather then through the interface) this means that rather then passing in a configuration object, the properties will be set directly by examining the incoming map and mapping the keys to fields using annotations. The context object will also be injected (removing the need for setContext)
 - Changing the API to support a "Delayed Update" (updating services inspectors etc when they say they are ready to be updated)
 - Adding in a Hooks API which will allow external programs to be called on events
 - Implementing a SSL socket wrapper
-- Implementing a Split Serializer (allows deserializing using one method, and serialization using another)
 - Implementing a GZIP Serializer (compresses/decompresses the data coming in/out)
 - Implementing a Repeater service (allows selecting existing connections to "Listen in to", repeating all data sent to it)
 - Implementing an Aggregator service (allows listening to multiple channels)
