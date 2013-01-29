@@ -79,6 +79,19 @@ public class UniversalConverter
 			return (T) from;
 		}
 
+		//Check if it's a boolean
+		if (to == boolean.class)
+		{
+			if (from instanceof Boolean)
+			{
+				return (T) from;
+			}
+			else if (from instanceof String)
+			{
+				return (T) Boolean.valueOf((String) from);
+			}
+		}
+
 		//Check if we need to parse it as a date
 		if (Date.class.isAssignableFrom(to))
 		{

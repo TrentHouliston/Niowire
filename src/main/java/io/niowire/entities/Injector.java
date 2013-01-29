@@ -18,6 +18,7 @@ package io.niowire.entities;
 
 import io.niowire.RuntimeNiowireException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.Map.Entry;
@@ -120,6 +121,11 @@ public class Injector<T>
 			{
 				m.invoke(o);
 				//If an exception occurs then wrap and throw it
+			}
+			//If it was an invocation exception throw its cause (probably more useful)
+			catch (InvocationTargetException ex)
+			{
+				throw new RuntimeNiowireException(ex.getCause());
 			}
 			catch (RuntimeException ex)
 			{

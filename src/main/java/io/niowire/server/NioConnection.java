@@ -326,7 +326,7 @@ public final class NioConnection implements ReadableByteChannel, WritableByteCha
 	 * Updates the objects associated with this definition if needed from the
 	 * server definition.
 	 *
-	 * @throws IOException if there was an error while trying to create the new
+	 * @throws NioObjectCreationException if there was an error while trying to create the new
 	 *                        objects
 	 */
 	public void updateServerDefinition() throws NioObjectCreationException

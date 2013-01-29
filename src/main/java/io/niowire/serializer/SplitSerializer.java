@@ -130,7 +130,7 @@ public class SplitSerializer implements NioSerializer
 	/**
 	 * Passes the passed buffer back to the output serializer to be rebuffered
 	 *
-	 * @param data
+	 * @param data the data to be rebuffered
 	 *
 	 * @throws IOException
 	 */
@@ -155,7 +155,7 @@ public class SplitSerializer implements NioSerializer
 	/**
 	 * Tests if both of the serializers are open
 	 *
-	 * @return
+	 * @return true if both serializers are open, false otherwise
 	 */
 	@Override
 	public boolean isOpen()
