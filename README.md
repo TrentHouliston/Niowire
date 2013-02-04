@@ -5,24 +5,39 @@ Below is a very simple example which configures a single server on port 12345 wh
 To implement your own server, you need a Serializer, an Inspector, and one or more services. You can either write these yourself or use one of the built in ones. If you don't specify a Serializer or Inspector it will use the default ones (a LineSerializer using utf-8 and a NullInspector)
 
 ```java
-//Make a service
-NioObjectFactory<NioService> service = new NioObjectFactory(EchoService.class);
+import io.niowire.NiowireException;
+import io.niowire.entities.NioObjectFactory;
+import io.niowire.server.NioSocketServer;
+import io.niowire.serversource.NioServerDefinition;
+import io.niowire.service.EchoService;
+import io.niowire.service.NioService;
+import java.util.Collections;
 
-//Create a server definition
-NioServerDefinition def = new NioServerDefinition();
-def.setId("SERVERX");
-def.setName("Super Awesome Server");
-def.setPort(12345);
-def.setServiceFactories(Collections.singletonList(service)));
+public class Example
+{
 
-//Make a server
-NioSocketServer server = new NioSocketServer();
-server.addServer(def);
+	public static void main(String[] args) throws Exception
+	{
+		//Make a service
+		NioObjectFactory<? extends NioService> service = new NioObjectFactory<EchoService>(EchoService.class);
 
-//Start the server
-new Thread(server).start();
+		//Create a server definition
+		NioServerDefinition def = new NioServerDefinition();
+		def.setId("SERVERX");
+		def.setName("Super Awesome Server");
+		def.setPort(12345);
+		def.setServiceFactories(Collections.singletonList(service));
 
-//You're done! there is now a service listening on port 12345!
+		//Make a server
+		NioSocketServer server = new NioSocketServer();
+		server.addServer(def);
+
+		//Start the server
+		new Thread(server).start();
+
+		//You're done! there is now a service listening on port 12345!
+	}
+}
 ```
 ##Overview
 Niowire is a highly scaleable socket server framework built on Java's NIO libraries. It handles all of the details of accepting and handling connections so that you can focus on the implementation of your program. Being built on NIO it is highly scalable and is capable of maintaining thousands of concurrent connections.
