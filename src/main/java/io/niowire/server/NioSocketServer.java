@@ -58,7 +58,7 @@ public class NioSocketServer implements Runnable
 	//The default inspector
 	static final NioObjectFactory<TimeoutInspector> DEFAULT_INSPECTOR = new NioObjectFactory<TimeoutInspector>(TimeoutInspector.class, Collections.singletonMap("timeout", -1));
 	//Our thread group
-	public final ThreadGroup LIVEWIRE_GROUP = new ThreadGroup("Livewire");
+	public final ThreadGroup NIOTHREAD_GROUP = new ThreadGroup("Livewire");
 	//The selector picking which socket to do next
 	private final Selector channels;
 	//Byte buffer for reading data into
@@ -122,7 +122,7 @@ public class NioSocketServer implements Runnable
 		{
 			//Create a new SourceRunner with the passed source
 			this.sourceRunner = new SourceRunner(source);
-			this.sourceRunnerThread = new Thread(LIVEWIRE_GROUP, this.sourceRunner, "SourceRunner");
+			this.sourceRunnerThread = new Thread(NIOTHREAD_GROUP, this.sourceRunner, "SourceRunner");
 			this.sourceRunnerThread.setDaemon(true);
 		}
 		else
@@ -185,6 +185,11 @@ public class NioSocketServer implements Runnable
 								LOG.warn("Exception while shutting down connection {}", key.channel());
 							}
 						}
+
+						//Interrupt all the threads in the group (signal to shutdown)
+						NIOTHREAD_GROUP.interrupt();
+						//TODO make all threads which register with this thread respect this
+
 						//Die! (kill the thread)
 						throw new ThreadDeath();
 					}
@@ -610,7 +615,7 @@ public class NioSocketServer implements Runnable
 		@Override
 		public void run()
 		{
-			while (true)
+			while (!Thread.currentThread().isInterrupted())
 			{
 				try
 				{

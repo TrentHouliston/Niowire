@@ -1,0 +1,6 @@
+{
+	"class" : "io.niowire.serializer.LineSerializer",
+	"configuration" : {
+		"charset":"utf-8"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"class" : "io.niowire.serializer.DelayOutputSerializer",
+	"configuration" : {
+		"delay":100,
+		"serializer" : {
+			"class":"io.niowire.serializer.LineSerializer",
+			"configuration" : {
+				"charset":"utf-8"
+			}
+		}
+	}
+}

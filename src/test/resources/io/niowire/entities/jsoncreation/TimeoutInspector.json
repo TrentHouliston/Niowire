@@ -1,0 +1,6 @@
+{
+	"class" : "io.niowire.inspection.TimeoutInspector",
+	"configuration" : {
+		"timeout":100
+	}
+}

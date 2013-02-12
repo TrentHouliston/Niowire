@@ -16,6 +16,7 @@
  */
 package io.niowire.entities;
 
+import com.google.gson.annotations.SerializedName;
 import java.util.Collections;
 import java.util.Map;
 
@@ -31,8 +32,11 @@ import java.util.Map;
 public class NioObjectFactory<T>
 {
 
-	private final Class<T> clazz;
-	private final Injector<T> injector;
+	@SerializedName("class")
+	private String className;
+	private Map<String, Object> configuration;
+	private Class<T> clazz;
+	private Injector<T> injector;
 
 	/**
 	 * This constructs a new Object Factory using the passed className
@@ -118,6 +122,23 @@ public class NioObjectFactory<T>
 	 */
 	public T create(Map<String, ? extends Object> injections) throws NioObjectCreationException
 	{
+		//If we were made via gson then we need to set ourselves up
+		if (clazz == null)
+		{
+			try
+			{
+				@SuppressWarnings("unchecked")
+				Class<T> newClass;
+				newClass = (Class<T>) Class.forName(className);
+				clazz = newClass;
+				injector = new Injector<T>(clazz, configuration);
+			}
+			catch (ClassNotFoundException ex)
+			{
+				throw new NioObjectCreationException(ex);
+			}
+		}
+
 		try
 		{
 			//Create a class object from our class name

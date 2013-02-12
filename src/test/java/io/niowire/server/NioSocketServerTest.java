@@ -114,7 +114,7 @@ public class NioSocketServerTest
 		def.setServiceFactories(Collections.singletonList(serviceFactory));
 
 		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server.LIVEWIRE_GROUP, server);
+		Thread t = new Thread(server.NIOTHREAD_GROUP, server);
 		t.setDaemon(true);
 		t.start();
 
@@ -292,7 +292,7 @@ public class NioSocketServerTest
 		defs[2].setServiceFactories(Collections.singletonList(serviceFactories[2][0]));
 
 		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server.LIVEWIRE_GROUP, server);
+		Thread t = new Thread(server.NIOTHREAD_GROUP, server);
 		t.setDaemon(true);
 		t.start();
 
@@ -679,7 +679,7 @@ public class NioSocketServerTest
 		def.setServiceFactories(Collections.singletonList((NioObjectFactory<NioService>) factory));
 
 		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server.LIVEWIRE_GROUP, server);
+		Thread t = new Thread(server.NIOTHREAD_GROUP, server);
 		t.setDaemon(true);
 		t.start();
 
@@ -745,7 +745,7 @@ public class NioSocketServerTest
 		def.setServiceFactories(Collections.singletonList(serviceFactory));
 
 		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server.LIVEWIRE_GROUP, server);
+		Thread t = new Thread(server.NIOTHREAD_GROUP, server);
 		t.setDaemon(true);
 		t.start();
 
@@ -803,7 +803,7 @@ public class NioSocketServerTest
 		def.setServiceFactories(Collections.singletonList(serviceFactory));
 
 		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server.LIVEWIRE_GROUP, server);
+		Thread t = new Thread(server.NIOTHREAD_GROUP, server);
 		t.setDaemon(true);
 		t.start();
 		//</editor-fold>
@@ -898,7 +898,7 @@ public class NioSocketServerTest
 		NioSocketServer server = new NioSocketServer(source);
 
 		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server.LIVEWIRE_GROUP, server);
+		Thread t = new Thread(server.NIOTHREAD_GROUP, server);
 		t.setDaemon(true);
 		t.start();
 		//</editor-fold>

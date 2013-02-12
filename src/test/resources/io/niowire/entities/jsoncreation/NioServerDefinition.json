@@ -1,0 +1,21 @@
+{
+	"name" : "test",
+	"port" : 12012,
+
+	"serializerFactory" : {
+		"type" : "io.niowire.serializer.JsonSerializer",
+		"configuration" : {
+			"charset":"utf-8"
+		}
+	},
+
+	"inspectorFactory" : {
+		"type" : "io.niowire.inspection.NullInspector"
+	},
+
+	"serviceFactories" : [
+	{
+		"type" : "io.niowire.service.EchoService"
+	}
+	]
+}

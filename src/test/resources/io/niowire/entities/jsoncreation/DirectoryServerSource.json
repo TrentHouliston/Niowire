@@ -1,0 +1,6 @@
+{
+	"class" : "io.niowire.serversource.DirectoryServerSource",
+	"configuration" : {
+		"directory":"test"
+	}
+}

@@ -3,19 +3,19 @@
 	"port" : 12012,
 
 	"serializerFactory" : {
-		"className" : "io.niowire.serializer.JsonSerializer",
+		"type" : "io.niowire.serializer.JsonSerializer",
 		"configuration" : {
 			"charset":"utf-8"
 		}
 	},
 
 	"inspectorFactory" : {
-		"className" : "io.niowire.inspection.NullInspector"
+		"type" : "io.niowire.inspection.NullInspector"
 	},
 
 	"serviceFactories" : [
 	{
-		"className" : "io.niowire.service.EchoService"
+		"type" : "io.niowire.service.EchoService"
 	}
 	]
 }

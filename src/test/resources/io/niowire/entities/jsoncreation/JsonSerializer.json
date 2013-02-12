@@ -1,0 +1,6 @@
+{
+	"class" : "io.niowire.serializer.JsonSerializer",
+	"configuration" : {
+		"charset":"utf-8"
+	}
+}

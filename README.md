@@ -79,14 +79,14 @@ The directory server source uses JSON files which are stored in a directory on t
 	"port" : 12012,
 
 	"serializerFactory" : {
-		"className" : "io.niowire.serializer.JsonSerializer",
+		"class" : "io.niowire.serializer.JsonSerializer",
 		"configuration" : {
 			"charset":"utf-8"
 		}
 	},
 
 	"inspectorFactory" : {
-		"className" : "io.niowire.inspection.TimeoutInspector"
+		"class" : "io.niowire.inspection.TimeoutInspector"
 		"configuration" : {
 			"timeout":-1
 		}
@@ -94,7 +94,7 @@ The directory server source uses JSON files which are stored in a directory on t
 
 	"serviceFactories" : [
 	{
-		"className" : "io.niowire.service.EchoService"
+		"class" : "io.niowire.service.EchoService"
 	}
 	]
 }

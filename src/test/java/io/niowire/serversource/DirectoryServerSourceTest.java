@@ -17,10 +17,8 @@
 package io.niowire.serversource;
 
 import io.niowire.entities.Injector;
-import io.niowire.entities.NioObjectFactory;
 import java.io.File;
 import java.io.FileWriter;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Map;
@@ -61,7 +59,7 @@ public class DirectoryServerSourceTest
 		assertTrue(tmpdir.isDirectory());
 
 		//Get our test file from our test resources
-		String test = new Scanner(DirectoryServerSourceTest.class.getResourceAsStream("test.json")).useDelimiter("\\Z").next();
+		String test = new Scanner(DirectoryServerSourceTest.class.getResourceAsStream(DirectoryServerSource.class.getSimpleName() + ".json")).useDelimiter("\\Z").next();
 
 		//Create an array for our server defintions
 		File[] serverDefs = new File[5];
