@@ -653,7 +653,7 @@ public class NioSocketServerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test(timeout = 100000000)
+	@Test(timeout = 1000)
 	@SuppressWarnings("unchecked")
 	public void testExceptionDuringConnectionCreation() throws Exception
 	{

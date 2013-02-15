@@ -28,7 +28,7 @@ import static org.junit.Assert.*;
 public class String2BooleanTest
 {
 
-	@Test
+	@Test(timeout = 1000)
 	public void testString2Boolean() throws Exception
 	{
 		//Make our converter

@@ -33,7 +33,7 @@ public class String2CharacterTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testString2Character() throws Exception
 	{
 		//Make a converter

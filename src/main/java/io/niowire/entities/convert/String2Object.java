@@ -38,7 +38,7 @@ public class String2Object implements Converter<String, Object>
 	 * @param from     the String we are converting from
 	 * @param actualTo the actual runtime class we are converting to.
 	 *
-	 * @return
+	 * @return a converted object created by using the forName method
 	 *
 	 * @throws TryNextConverterException
 	 */

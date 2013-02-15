@@ -29,7 +29,7 @@ import static org.junit.Assert.*;
 public class Object2ObjectTest
 {
 
-	@Test
+	@Test(timeout = 1000)
 	public void testObject2Object() throws Exception
 	{
 		Object2Object converter = new Object2Object();

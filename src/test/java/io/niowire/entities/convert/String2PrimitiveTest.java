@@ -35,7 +35,7 @@ public class String2PrimitiveTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testString2Primitive() throws Exception
 	{
 		String intStr = "1";

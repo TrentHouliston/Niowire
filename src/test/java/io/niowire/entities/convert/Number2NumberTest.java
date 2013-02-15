@@ -34,7 +34,7 @@ public class Number2NumberTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNumber2Number() throws Exception
 	{
 		//Make our converter

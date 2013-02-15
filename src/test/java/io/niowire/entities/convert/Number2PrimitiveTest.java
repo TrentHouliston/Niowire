@@ -34,7 +34,7 @@ public class Number2PrimitiveTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNumber2Primitive() throws Exception
 	{
 		int in = 5;

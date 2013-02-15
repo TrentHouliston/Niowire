@@ -35,7 +35,7 @@ public class String2ObjectTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testString2Object() throws Exception
 	{
 		String2Object converter = new String2Object();

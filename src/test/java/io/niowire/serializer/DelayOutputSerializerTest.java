@@ -40,7 +40,7 @@ public class DelayOutputSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testDelayedOutput() throws Exception
 	{
 		//Make a test config

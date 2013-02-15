@@ -32,7 +32,7 @@ public class Object2StringTest
 	 * Tests that objects passed into this method are correctly converted into
 	 * Strings using the toString method
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testObject2String()
 	{
 		Object2String converter = new Object2String();

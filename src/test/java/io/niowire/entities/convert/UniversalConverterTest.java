@@ -44,7 +44,7 @@ public class UniversalConverterTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testString() throws Exception
 	{
 		Object obj = new Object();
@@ -61,7 +61,7 @@ public class UniversalConverterTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testBooleans() throws Exception
 	{
 		String tr = "true";
@@ -79,7 +79,7 @@ public class UniversalConverterTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNumbers() throws Exception
 	{
 		String intStr = "1";
@@ -300,7 +300,7 @@ public class UniversalConverterTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testChar() throws Exception
 	{
 		String a = "Hello World";
@@ -319,7 +319,7 @@ public class UniversalConverterTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testClasses() throws Exception
 	{
 		String test1 = Object.class.getName();
@@ -337,7 +337,7 @@ public class UniversalConverterTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNioObjectFactories() throws Exception
 	{
 		HashMap<String, Object> map = new HashMap<String, Object>(2);
@@ -371,7 +371,7 @@ public class UniversalConverterTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testCasting() throws Exception
 	{
 		//Make some test data
@@ -387,7 +387,7 @@ public class UniversalConverterTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNulls() throws Exception
 	{
 		assertNull(UniversalConverter.doConvert(null, String.class));
@@ -399,7 +399,7 @@ public class UniversalConverterTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	@SuppressWarnings(
 	{
 		"unchecked", "unchecked", "unchecked", "unchecked"

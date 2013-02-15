@@ -39,7 +39,7 @@ public class Map2NioObjectFactoryTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testMap2NioObjectFactory() throws Exception
 	{
 		Map2NioObjectFactory converter = new Map2NioObjectFactory();

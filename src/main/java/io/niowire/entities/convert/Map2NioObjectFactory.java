@@ -35,7 +35,7 @@ public class Map2NioObjectFactory implements Converter<Map, NioObjectFactory>
 	 * @param from     the Map to convert from
 	 * @param actualTo NioObjectFactory.class
 	 *
-	 * @return
+	 * @return the created NioObjectFactory
 	 */
 	@Override
 	public NioObjectFactory convert(Map from, Class<? extends NioObjectFactory> actualTo)

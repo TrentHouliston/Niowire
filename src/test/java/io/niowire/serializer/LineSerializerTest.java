@@ -496,7 +496,7 @@ public class LineSerializerTest
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNonRawOmitsRawSerialize() throws Exception
 	{
 		//Using UTF-8
@@ -545,7 +545,7 @@ public class LineSerializerTest
 	 * Tests that if the serializer is not setup as a raw serializer , it
 	 * ignores raw data
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNonRawOmitsRawDeserialize() throws Exception
 	{
 		//Using UTF-8

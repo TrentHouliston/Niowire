@@ -56,7 +56,7 @@ public class GsonObjectFactoryCreationTests
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testNioServerDefinition() throws Exception
 	{
 		Context context = mock(Context.class);
@@ -85,7 +85,7 @@ public class GsonObjectFactoryCreationTests
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testTimeoutInspector() throws Exception
 	{
 		Context context = mock(Context.class);
@@ -104,7 +104,7 @@ public class GsonObjectFactoryCreationTests
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testDelayOutputSerializer() throws Exception
 	{
 		Context context = mock(Context.class);
@@ -145,7 +145,7 @@ public class GsonObjectFactoryCreationTests
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testJsonSerializer() throws Exception
 	{
 		Context context = mock(Context.class);
@@ -171,7 +171,7 @@ public class GsonObjectFactoryCreationTests
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testLineSerializer() throws Exception
 	{
 		Context context = mock(Context.class);
@@ -198,7 +198,7 @@ public class GsonObjectFactoryCreationTests
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testDirectoryServerSource() throws Exception
 	{
 		Context context = mock(Context.class);
@@ -213,7 +213,7 @@ public class GsonObjectFactoryCreationTests
 	 *
 	 * @throws Exception
 	 */
-	@Test
+	@Test(timeout = 1000)
 	public void testEchoService() throws Exception
 	{
 		Context context = mock(Context.class);
