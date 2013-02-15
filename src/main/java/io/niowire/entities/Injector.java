@@ -16,6 +16,7 @@
  */
 package io.niowire.entities;
 
+import io.niowire.entities.convert.UniversalConverter;
 import io.niowire.RuntimeNiowireException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -218,7 +219,7 @@ public class Injector<T>
 					if (configuration.containsKey(source))
 					{
 						//Convert our value
-						Object value = UniversalConverter.convert(configuration.get(source), f.getType());
+						Object value = UniversalConverter.doConvert(configuration.get(source), f.getType());
 						//Add the injection to our map
 						fields.put(f, value);
 					}

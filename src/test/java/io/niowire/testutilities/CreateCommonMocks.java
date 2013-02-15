@@ -18,7 +18,6 @@ package io.niowire.testutilities;
 
 import io.niowire.data.NioPacket;
 import io.niowire.entities.NioObjectFactory;
-import java.util.Map;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;

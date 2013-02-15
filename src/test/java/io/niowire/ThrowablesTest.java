@@ -17,6 +17,8 @@
 package io.niowire;
 
 import io.niowire.entities.NioObjectCreationException;
+import io.niowire.entities.convert.TryNextConverterException;
+import io.niowire.entities.convert.UnconvertableObjectException;
 import io.niowire.inspection.NioAuthenticationException;
 import io.niowire.serializer.NioInvalidDataException;
 import io.niowire.server.NioConnectionException;
@@ -130,6 +132,28 @@ public class ThrowablesTest
 	public void testNioObjectCreationException() throws Exception
 	{
 		testThrowable(NioObjectCreationException.class);
+	}
+
+	/**
+	 * Tests {@link TryNextConverterException}
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testTryNextConverter() throws Exception
+	{
+		testThrowable(TryNextConverterException.class);
+	}
+
+	/**
+	 * Tests {@link UnconvertableObjectException}
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testUnconvertableObjectException() throws Exception
+	{
+		testThrowable(UnconvertableObjectException.class);
 	}
 
 	/**
