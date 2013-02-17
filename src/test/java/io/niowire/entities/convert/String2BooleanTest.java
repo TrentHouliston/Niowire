@@ -16,7 +16,11 @@
  */
 package io.niowire.entities.convert;
 
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.*;
 
@@ -25,21 +29,53 @@ import static org.junit.Assert.*;
  *
  * @author Trent Houliston
  */
+@RunWith(Parameterized.class)
 public class String2BooleanTest
 {
 
+	@Parameterized.Parameter(0)
+	public String str;
+	@Parameterized.Parameter(1)
+	public Boolean bool;
+
+	/**
+	 * Tests that the conversion from the string to boolean works properly
+	 *
+	 * @throws Exception
+	 */
 	@Test(timeout = 1000)
 	public void testString2Boolean() throws Exception
 	{
 		//Make our converter
 		String2Boolean converter = new String2Boolean();
 
-		//Test true
-		assertTrue(converter.convert("True", Boolean.class));
-		assertTrue(converter.convert("true", Boolean.class));
+		//Test the value
+		assertEquals("The value did not convert properly", converter.convert(str, Boolean.class), bool);
+	}
 
-		//Test false
-		assertFalse(converter.convert("False", Boolean.class));
-		assertFalse(converter.convert("false", Boolean.class));
+	/**
+	 * Gets a list of tests and expected results to run
+	 *
+	 * @return a list of tests and expected results to run
+	 */
+	@Parameterized.Parameters
+	public static List<?> parameters()
+	{
+		//Test that true and false convert properly and they are case insensitive
+		return Arrays.asList(new Object[][]
+				{
+					{
+						"true", true
+					},
+					{
+						"tRuE", true
+					},
+					{
+						"false", false
+					},
+					{
+						"fAlSe", false
+					}
+				});
 	}
 }

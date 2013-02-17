@@ -16,7 +16,11 @@
  */
 package io.niowire.entities.convert;
 
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.*;
 
@@ -25,8 +29,14 @@ import static org.junit.Assert.*;
  *
  * @author Trent Houliston
  */
+@RunWith(Parameterized.class)
 public class String2CharacterTest
 {
+
+	@Parameterized.Parameter(0)
+	public String str;
+	@Parameterized.Parameter(1)
+	public Character ch;
 
 	/**
 	 * Check the converter works properly
@@ -39,11 +49,37 @@ public class String2CharacterTest
 		//Make a converter
 		String2Character converter = new String2Character();
 
-		//Try converting a few Strings
-		assertEquals(Character.valueOf('A'), converter.convert("A", Character.class));
-		assertEquals(Character.valueOf('D'), converter.convert("Dogs", Character.class));
+		//Test converting our string
+		assertEquals(ch, converter.convert(str, Character.class));
+	}
 
-		//Blank strings convert to null
-		assertNull(converter.convert("", Character.class));
+	/**
+	 * Gets a list of tests and expected results to run
+	 *
+	 * @return a list of tests and expected results to run
+	 */
+	@Parameterized.Parameters
+	public static List<?> parameters()
+	{
+		//Test that characters convert properly
+		return Arrays.asList(new Object[][]
+				{
+					//Test Character
+					{
+						"A", 'A'
+					},
+					//Test String
+					{
+						"Dogs", 'D'
+					},
+					//Test Unicode
+					{
+						"ß", 'ß'
+					},
+					//Test empty string
+					{
+						"", null
+					}
+				});
 	}
 }

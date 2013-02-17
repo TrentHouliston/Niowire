@@ -78,21 +78,21 @@ The directory server source uses JSON files which are stored in a directory on t
 	"name" : "global",
 	"port" : 12012,
 
-	"serializerFactory" : {
+	"serializer" : {
 		"class" : "io.niowire.serializer.JsonSerializer",
 		"configuration" : {
 			"charset":"utf-8"
 		}
 	},
 
-	"inspectorFactory" : {
+	"inspector" : {
 		"class" : "io.niowire.inspection.TimeoutInspector"
 		"configuration" : {
 			"timeout":-1
 		}
 	},
 
-	"serviceFactories" : [
+	"services" : [
 	{
 		"class" : "io.niowire.service.EchoService"
 	}

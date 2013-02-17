@@ -20,14 +20,13 @@ import io.niowire.data.NioPacket;
 import io.niowire.entities.Initialize;
 import io.niowire.entities.NioObjectCreationException;
 import io.niowire.entities.NioObjectFactory;
-import io.niowire.server.NioConnection;
 import io.niowire.server.NioConnection.Context;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import javax.inject.Inject;
+import javax.inject.Named;
 
 /**
  * This class implements the SplitSerializer, it internally uses two serializers
@@ -40,13 +39,11 @@ public class SplitSerializer implements NioSerializer
 {
 
 	@Inject
-	private Class<NioSerializer> inputClass;
+	@Named(value = "inputSerializer")
+	private NioObjectFactory<NioSerializer> inputFactory;
 	@Inject
-	private Class<NioSerializer> outputClass;
-	@Inject
-	private Map<String, ? extends Object> inputConfiguration;
-	@Inject
-	private Map<String, ? extends Object> outputConfiguration;
+	@Named(value = "outputSerializer")
+	private NioObjectFactory<NioSerializer> outputFactory;
 	@Inject
 	protected Context context;
 	private NioSerializer input;
@@ -62,10 +59,6 @@ public class SplitSerializer implements NioSerializer
 	@Initialize
 	public void init() throws NioObjectCreationException, IllegalAccessException
 	{
-		//Get factories
-		NioObjectFactory<NioSerializer> inputFactory = new NioObjectFactory<NioSerializer>(inputClass, inputConfiguration);
-		NioObjectFactory<NioSerializer> outputFactory = new NioObjectFactory<NioSerializer>(outputClass, outputConfiguration);
-
 		//Create and inject
 		input = inputFactory.create(Collections.singletonMap("context", context));
 		output = outputFactory.create(Collections.singletonMap("context", context));

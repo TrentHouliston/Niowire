@@ -16,7 +16,11 @@
  */
 package io.niowire.entities.convert;
 
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.*;
 
@@ -25,8 +29,14 @@ import static org.junit.Assert.*;
  *
  * @author Trent Houliston
  */
+@RunWith(Parameterized.class)
 public class Object2StringTest
 {
+
+	@Parameterized.Parameter(0)
+	public Object input;
+	@Parameterized.Parameter(1)
+	public String expected;
 
 	/**
 	 * Tests that objects passed into this method are correctly converted into
@@ -37,11 +47,47 @@ public class Object2StringTest
 	{
 		Object2String converter = new Object2String();
 
-		//Test converting several objects to strings
+		assertEquals("The converter did not convert the object properly", expected, converter.convert(input, String.class));
+	}
+
+	/**
+	 * Gets a list of tests and expected results to run
+	 *
+	 * @return a list of tests and expected results to run
+	 */
+	@Parameterized.Parameters
+	public static List<?> parameters()
+	{
 		Object o = new Object();
-		assertEquals("The converter did not convert the object properly", o.toString(), converter.convert(o, String.class));
-		assertEquals("The converter did not convert the object properly", "Hello World", converter.convert("Hello World", String.class));
-		assertEquals("The converter did not convert the object properly", Integer.valueOf(10).toString(), converter.convert(Integer.valueOf(10), String.class));
-		assertEquals("The converter did not convert the object properly", Integer.toString(5), converter.convert(5, String.class));
+
+		//Test that Strings convert to objects properly (using forName)
+		return Arrays.asList(new Object[][]
+				{
+					//Test object
+					{
+						o, o.toString()
+					},
+					{
+						"Hello World", "Hello World"
+					},
+					//Test number
+					{
+						5, Integer.toString(5)
+					},
+					//Test char array special case
+					{
+						new char[]
+						{
+							'F', 'o', 'o', 'b', 'a', 'r'
+						}, "Foobar"
+					},
+					//Test Character array special case
+					{
+						new Character[]
+						{
+							'F', 'o', 'o', 'b', 'a', 'r'
+						}, "Foobar"
+					}
+				});
 	}
 }

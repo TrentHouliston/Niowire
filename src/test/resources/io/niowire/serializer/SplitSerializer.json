@@ -1,0 +1,17 @@
+{
+	"class": "io.niowire.serializer.SplitSerializer",
+	"configuration": {
+		"inputSerializer":{
+			"class": "io.niowire.serializer.JsonSerializer",
+			"configuration":{
+				"charset":"utf-8"
+			}
+		},
+		"outputSerializer":{
+			"class": "io.niowire.serializer.LineSerializer",
+			"configuration":{
+				"charset":"utf-8"
+			}
+		}
+	}
+}

@@ -41,11 +41,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
+import org.mockito.AdditionalAnswers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import static io.niowire.testutilities.CreateCommonMocks.*;
+import static io.niowire.testutilities.TestUtilities.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -102,7 +103,7 @@ public class NioSocketServerTest
 				return "Sending you back some data".getBytes("utf-8").length;
 			}
 		});
-		when(inspector.inspect(any(NioPacket.class))).then(new ReturnParametersAnswer<NioPacket>());
+		when(inspector.inspect(any(NioPacket.class))).then(AdditionalAnswers.returnsArgAt(0));
 
 		//Build our first definition
 		def = new NioServerDefinition();
@@ -225,13 +226,13 @@ public class NioSocketServerTest
 		NioInspector[] inspectors = new NioInspector[3];
 		inspectors[0] = mock(NioInspector.class);
 		when(inspectors[0].getUid()).thenReturn("server0");
-		when(inspectors[0].inspect(any(NioPacket.class))).then(new ReturnParametersAnswer<NioPacket>());
+		when(inspectors[0].inspect(any(NioPacket.class))).then(AdditionalAnswers.returnsArgAt(0));
 		inspectors[1] = mock(NioInspector.class);
 		when(inspectors[1].getUid()).thenReturn("server1");
-		when(inspectors[1].inspect(any(NioPacket.class))).then(new ReturnParametersAnswer<NioPacket>());
+		when(inspectors[1].inspect(any(NioPacket.class))).then(AdditionalAnswers.returnsArgAt(0));
 		inspectors[2] = mock(NioInspector.class);
 		when(inspectors[2].getUid()).thenReturn("server2");
-		when(inspectors[2].inspect(any(NioPacket.class))).then(new ReturnParametersAnswer<NioPacket>());
+		when(inspectors[2].inspect(any(NioPacket.class))).then(AdditionalAnswers.returnsArgAt(0));
 
 		//Mock two services for each server (for updating with and validating the data got to the correct spot)
 		NioService[][] services = new NioService[3][2];

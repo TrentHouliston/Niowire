@@ -18,7 +18,9 @@ package io.niowire.serializer;
 
 import io.niowire.data.NioPacket;
 import io.niowire.entities.NioObjectFactory;
+import io.niowire.entities.convert.UniversalConverter;
 import io.niowire.server.NioConnection.Context;
+import io.niowire.testutilities.TestUtilities;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,23 +55,30 @@ public class SplitSerializerTest
 	public void setUp() throws Exception
 	{
 		//Build a config for each
-		Map<String, Object> splitConfig = new HashMap<String, Object>(4);
-		Map<String, Object> inputConfig = new HashMap<String, Object>(1);
-		Map<String, Object> outputConfig = new HashMap<String, Object>(1);
-		inputConfig.put("charset", "utf-8");
-		outputConfig.put("charset", "utf-8");
-		splitConfig.put("inputClass", JsonSerializer.class);
-		splitConfig.put("inputConfiguration", inputConfig);
-		splitConfig.put("outputClass", LineSerializer.class);
-		splitConfig.put("outputConfiguration", outputConfig);
+		Map<String, Object> inSerializer = new HashMap<String, Object>(2);
+		Map<String, Object> outSerializer = new HashMap<String, Object>(2);
+		Map<String, Object> splitConfig = new HashMap<String, Object>(2);
+		Map<String, Object> spSerializer = new HashMap<String, Object>(2);
+
+		inSerializer.put("class", JsonSerializer.class);
+		inSerializer.put("configuration", Collections.singletonMap("charset", "utf-8"));
+
+		outSerializer.put("class", LineSerializer.class);
+		outSerializer.put("configuration", Collections.singletonMap("charset", "utf-8"));
+
+		splitConfig.put("inputSerializer", inSerializer);
+		splitConfig.put("outputSerializer", outSerializer);
+
+		spSerializer.put("class", SplitSerializer.class);
+		spSerializer.put("configuration", splitConfig);
 
 		//Mock some contexts
 		Context context = mock(Context.class);
 
 		//Create factories for each of the objects
-		NioObjectFactory<SplitSerializer> splitFactory = new NioObjectFactory<SplitSerializer>(SplitSerializer.class, splitConfig);
-		NioObjectFactory<JsonSerializer> inputFactory = new NioObjectFactory<JsonSerializer>(JsonSerializer.class, inputConfig);
-		NioObjectFactory<LineSerializer> outputFactory = new NioObjectFactory<LineSerializer>(LineSerializer.class, outputConfig);
+		NioObjectFactory<SplitSerializer> splitFactory = UniversalConverter.doConvert(spSerializer, NioObjectFactory.class);
+		NioObjectFactory<JsonSerializer> inputFactory = UniversalConverter.doConvert(inSerializer, NioObjectFactory.class);
+		NioObjectFactory<LineSerializer> outputFactory = UniversalConverter.doConvert(outSerializer, NioObjectFactory.class);
 
 		//Inject details
 		this.splitSerializer = splitFactory.create(Collections.singletonMap("context", context));
@@ -130,6 +139,26 @@ public class SplitSerializerTest
 
 		//Check they are the same
 		assertArrayEquals("The arrays for these two packets should have been identical", split.array(), output.array());
+	}
 
+	/**
+	 * Test that SplitSerializers are created from Json properly
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testJsonCreation() throws Exception
+	{
+		Context context = mock(Context.class);
+
+		/*
+		 * Overwrite our local serializer with the Json one and check it behaves
+		 * in the same way as the original
+		 */
+		splitSerializer = TestUtilities.buildAndTestFromJson(SplitSerializer.class, context);
+
+		//Run both tests again
+		testDataInput();
+		testDataOutput();
 	}
 }

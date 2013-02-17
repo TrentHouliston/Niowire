@@ -17,7 +17,11 @@
 package io.niowire.entities.convert;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.*;
 
@@ -26,8 +30,16 @@ import static org.junit.Assert.*;
  *
  * @author Trent Houliston
  */
+@RunWith(Parameterized.class)
 public class String2ObjectTest
 {
+
+	@Parameterized.Parameter(0)
+	public String input;
+	@Parameterized.Parameter(1)
+	public Object result;
+	@Parameterized.Parameter(2)
+	public Class<?> type;
 
 	/**
 	 * Tests that creation of the object by using the forName method works
@@ -41,12 +53,7 @@ public class String2ObjectTest
 		String2Object converter = new String2Object();
 
 		//Attempt converting a few objects
-		assertEquals("The object did not convert properly", Object.class, converter.convert(Object.class.getName(), Class.class));
-		assertEquals("The object did not convert properly", String.class, converter.convert(String.class.getName(), Class.class));
-		assertEquals("The object did not convert properly", UniversalConverter.class, converter.convert(UniversalConverter.class.getName(), Class.class));
-
-		assertEquals("The object did not convert properly", Charset.forName("utf-8"), converter.convert("utf-8", Charset.class));
-		assertEquals("The object did not convert properly", Charset.forName("ascii"), converter.convert("ascii", Charset.class));
+		assertEquals("The object did not convert properly", result, converter.convert(input, type));
 
 		//Test a class without a forName method throws an error
 		try
@@ -58,5 +65,33 @@ public class String2ObjectTest
 		{
 			assertNotNull(ex);
 		}
+	}
+
+	/**
+	 * Gets a list of tests and expected results to run
+	 *
+	 * @return a list of tests and expected results to run
+	 */
+	@Parameterized.Parameters
+	public static List<?> parameters()
+	{
+		//Test that Strings convert to objects properly (using forName)
+		return Arrays.asList(new Object[][]
+				{
+					//Test two classes
+					{
+						Object.class.getName(), Object.class, Class.class
+					},
+					{
+						String.class.getName(), String.class, Class.class
+					},
+					//Test two charset objects
+					{
+						"utf-8", Charset.forName("utf-8"), Charset.class
+					},
+					{
+						"ascii", Charset.forName("ascii"), Charset.class
+					}
+				});
 	}
 }

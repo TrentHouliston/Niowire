@@ -16,6 +16,7 @@
  */
 package io.niowire.serversource;
 
+import com.google.gson.annotations.SerializedName;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.inspection.NioInspector;
 import io.niowire.serializer.NioSerializer;
@@ -39,8 +40,11 @@ public class NioServerDefinition
 	protected String name;
 	//Box the port so it can be null (grab any free port)
 	protected Integer port;
+	@SerializedName("serializer")
 	protected NioObjectFactory<? extends NioSerializer> serializerFactory;
+	@SerializedName("inspector")
 	protected NioObjectFactory<? extends NioInspector> inspectorFactory;
+	@SerializedName("services")
 	protected List<NioObjectFactory<? extends NioService>> serviceFactories;
 
 	/**

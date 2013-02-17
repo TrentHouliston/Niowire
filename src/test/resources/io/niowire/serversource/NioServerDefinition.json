@@ -1,0 +1,21 @@
+{
+	"name" : "test",
+	"port" : 12012,
+
+	"serializer" : {
+		"class" : "io.niowire.serializer.JsonSerializer",
+		"configuration" : {
+			"charset":"utf-8"
+		}
+	},
+
+	"inspector" : {
+		"class" : "io.niowire.inspection.TimeoutInspector"
+	},
+
+	"services" : [
+	{
+		"class" : "io.niowire.service.EchoService"
+	}
+	]
+}

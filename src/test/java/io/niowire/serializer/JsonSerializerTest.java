@@ -4,6 +4,7 @@ import io.niowire.data.NioPacket;
 import io.niowire.entities.Injector;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.server.NioConnection;
+import io.niowire.testutilities.TestUtilities;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -312,5 +313,32 @@ public class JsonSerializerTest
 
 		public String dog = "woof";
 		public String cat = "meow";
+	}
+
+
+	/**
+	 * Test that Json Serializers are created from JSON properly
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testJsonCreation() throws Exception
+	{
+		NioConnection.Context context = mock(NioConnection.Context.class);
+		JsonSerializer test = TestUtilities.buildAndTestFromJson(JsonSerializer.class, context);
+
+		//Test that the serializer is using utf-8
+		String testIn = "{'string':'✓✓Ï‹¸¸Ó´¯¸˘˘°ﬁ·˝∏ÇÏÍÇ¸π“£¢ªº√∆Ωç˚œæ'}\n";
+		String expected = "✓✓Ï‹¸¸Ó´¯¸˘˘°ﬁ·˝∏ÇÏÍÇ¸π“£¢ªº√∆Ωç˚œæ";
+		//Test that the packets are delayed 100ms
+
+		//Serialize a packet
+		List<NioPacket> packets = test.deserialize(ByteBuffer.wrap(testIn.getBytes("utf-8")));
+
+		assertEquals("There should only be one packet", 1, packets.size());
+
+		assertTrue("The data should be a map", packets.get(0).getData() instanceof Map);
+
+		assertEquals("The data in the packet should be what we gave it", expected, ((Map) packets.get(0).getData()).get("string"));
 	}
 }

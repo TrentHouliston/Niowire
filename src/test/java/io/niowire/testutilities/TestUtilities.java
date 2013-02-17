@@ -16,12 +16,19 @@
  */
 package io.niowire.testutilities;
 
+import com.google.gson.Gson;
 import io.niowire.data.NioPacket;
+import io.niowire.entities.NioObjectCreationException;
 import io.niowire.entities.NioObjectFactory;
+import io.niowire.server.NioConnection;
+import java.lang.reflect.Constructor;
+import java.util.Collections;
+import java.util.Scanner;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -30,7 +37,7 @@ import static org.mockito.Mockito.*;
  *
  * @author Trent Houliston
  */
-public class CreateCommonMocks
+public class TestUtilities
 {
 
 	/**
@@ -86,6 +93,52 @@ public class CreateCommonMocks
 
 		//Return our mock
 		return f;
+	}
+
+	/**
+	 * Run the noargs constructor of this class (regardless of access level).
+	 * Used to run utility class constructors (for code coverage)
+	 *
+	 * @param clazz the class to run the constructor on
+	 *
+	 * @throws Exception
+	 */
+	public static void runPrivateConstructor(Class<?> clazz) throws Exception
+	{
+		//Get the constructor, set it to accessable and run it
+		Constructor<?> constructor = clazz.getDeclaredConstructor();
+		constructor.setAccessible(true);
+		constructor.newInstance();
+	}
+
+	/**
+	 * This helper method takes a class and finds the json file from this
+	 * directory from the class. It then builds the instance, checks it is the
+	 * correct class type and returns the object for further testing.
+	 *
+	 * @param <T>     the type of the object that should be returned
+	 * @param clazz   the class object for this object type
+	 * @param context the context to attempt to inject into this object
+	 *
+	 * @return a created instance of the object from the JSON file
+	 *
+	 * @throws NioObjectCreationException
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T buildAndTestFromJson(Class<T> clazz, NioConnection.Context context) throws NioObjectCreationException
+	{
+		//Read the test json file into the class factory
+		Gson g = new Gson();
+		String input = new Scanner(clazz.getResourceAsStream(clazz.getSimpleName() + ".json")).useDelimiter("\\Z").next();
+		NioObjectFactory<?> factory = g.fromJson(input, NioObjectFactory.class);
+
+		//Create an instance and inject the context
+		Object obj = factory.create(Collections.singletonMap("context", context));
+
+		//Check that the object is of the correct type
+		assertEquals("The object was not the correct instance", obj.getClass(), clazz);
+
+		return (T) obj;
 	}
 
 	/**
@@ -155,32 +208,6 @@ public class CreateCommonMocks
 		public T answer(InvocationOnMock invocation) throws Throwable
 		{
 			return object;
-		}
-	}
-
-	/**
-	 * This is an answer which returns the first parameter it was passed with as
-	 * the return.
-	 *
-	 * @param <T> the type of the object we are returning
-	 */
-	public static class ReturnParametersAnswer<T> implements Answer<T>
-	{
-
-		/**
-		 * Return the object we were invoked with
-		 *
-		 * @param invocation the invocation details
-		 *
-		 * @return the first parameter of the invocation
-		 *
-		 * @throws Throwable
-		 */
-		@Override
-		@SuppressWarnings("unchecked")
-		public T answer(InvocationOnMock invocation) throws Throwable
-		{
-			return (T) invocation.getArguments()[0];
 		}
 	}
 }

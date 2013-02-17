@@ -16,7 +16,7 @@
  */
 package io.niowire.entities.convert;
 
-import io.niowire.testutilities.RunPrivateUtilityConstructor;
+import io.niowire.testutilities.TestUtilities;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -107,6 +107,6 @@ public class String2PrimitiveTest
 		assertEquals(Character.valueOf('\u0000'), String2Primitive.convert("", char.class));
 
 		//Run our utility class builder
-		RunPrivateUtilityConstructor.runConstructor(String2Primitive.class);
+		TestUtilities.runPrivateConstructor(String2Primitive.class);
 	}
 }

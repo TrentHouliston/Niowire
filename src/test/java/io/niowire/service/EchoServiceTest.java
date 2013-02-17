@@ -20,6 +20,7 @@ import io.niowire.data.NioPacket;
 import io.niowire.entities.Injector;
 import io.niowire.server.NioConnection;
 import io.niowire.server.NioConnection.Context;
+import io.niowire.testutilities.TestUtilities;
 import java.io.IOException;
 import java.util.Collections;
 import org.junit.Test;
@@ -123,5 +124,24 @@ public class EchoServiceTest
 	{
 		EchoService service = new EchoService();
 		service.close();
+	}
+
+	/**
+	 * Test that EchoServices are created from Json properly
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testJsonCreation() throws Exception
+	{
+		Context context = mock(Context.class);
+		EchoService test = TestUtilities.buildAndTestFromJson(EchoService.class, context);
+
+		//Test that any packet we send is sent back
+		NioPacket data = new NioPacket("test", "test");
+
+		//Send and check it echoed
+		test.send(data);
+		verify(context).write(data);
 	}
 }

@@ -17,7 +17,12 @@
 package io.niowire.entities.convert;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.*;
 
@@ -26,83 +31,139 @@ import static org.junit.Assert.*;
  *
  * @author Trent Houliston
  */
+@RunWith(Enclosed.class)
 public class String2NumberTest
 {
 
 	/**
-	 * Tests that Strings are converted into numbers correctly
-	 *
-	 * @throws Exception
+	 * This class is for running the parameterized tests
 	 */
-	@Test(timeout = 1000)
-	public void testString2Number() throws Exception
+	@RunWith(Parameterized.class)
+	public static class Parametrized
 	{
-		String2Number converter = new String2Number();
-		Number result;
 
-		//Our test Strings
-		String intStr = "1";
-		String dblStr = "0.5";
-		String negIntStr = "-5";
-		String negDblStr = "-.1";
+		@Parameterized.Parameter(0)
+		public String input;
+		@Parameterized.Parameter(1)
+		public Long expectedInt;
+		@Parameterized.Parameter(2)
+		public Double expectedFloat;
 
-		//<editor-fold defaultstate="collapsed" desc="Test converting discrete numbers from Strings">
-		result = converter.convert(intStr, Byte.class);
-		assertTrue("The result was not of the correct type", result instanceof Byte);
-		assertTrue("The result did not parse to the correct value", ((byte) 1) == result.byteValue());
-		result = converter.convert(intStr, Short.class);
-		assertTrue("The result was not of the correct type", result instanceof Short);
-		assertTrue("The result did not parse to the correct value", ((short) 1) == result.shortValue());
-		result = converter.convert(intStr, Integer.class);
-		assertTrue("The result was not of the correct type", result instanceof Integer);
-		assertTrue("The result did not parse to the correct value", 1 == result.intValue());
-		result = converter.convert(intStr, Long.class);
-		assertTrue("The result was not of the correct type", result instanceof Long);
-		assertTrue("The result did not parse to the correct value", ((long) 1) == result.longValue());
-		//</editor-fold>
-
-		//<editor-fold defaultstate="collapsed" desc="Test converting floating point numbers from Strings">
-		result = converter.convert(dblStr, Float.class);
-		assertTrue("The result was not of the correct type", result instanceof Float);
-		assertTrue("The result did not parse to the correct value", ((float) 0.5) == result.floatValue());
-		result = converter.convert(dblStr, Double.class);
-		assertTrue("The result was not of the correct type", result instanceof Double);
-		assertTrue("The result did not parse to the correct value", 0.5 == result.doubleValue());
-		//</editor-fold>
-
-		//<editor-fold defaultstate="collapsed" desc="Test converting negative descrete numbers from Strings">
-		result = converter.convert(negIntStr, Byte.class);
-		assertTrue("The result was not of the correct type", result instanceof Byte);
-		assertTrue("The result did not parse to the correct value", ((byte) -5) == result.byteValue());
-		result = converter.convert(negIntStr, Short.class);
-		assertTrue("The result was not of the correct type", result instanceof Short);
-		assertTrue("The result did not parse to the correct value", ((short) -5) == result.shortValue());
-		result = converter.convert(negIntStr, Integer.class);
-		assertTrue("The result was not of the correct type", result instanceof Integer);
-		assertTrue("The result did not parse to the correct value", -5 == result.intValue());
-		result = converter.convert(negIntStr, Long.class);
-		assertTrue("The result was not of the correct type", result instanceof Long);
-		assertTrue("The result did not parse to the correct value", ((long) -5) == result.longValue());
-		//</editor-fold>
-
-		//<editor-fold defaultstate="collapsed" desc="Test converting negative floating point numbers from Strings">
-		result = converter.convert(negDblStr, Float.class);
-		assertTrue("The result was not of the correct type", result instanceof Float);
-		assertTrue("The result did not parse to the correct value", ((float) -0.1) == result.floatValue());
-		result = converter.convert(negDblStr, Double.class);
-		assertTrue("The result was not of the correct type", result instanceof Double);
-		assertTrue("The result did not parse to the correct value", -0.1 == result.doubleValue());
-		//</editor-fold>
-
-		//Test unsupported numbers
-		try
+		/**
+		 * Tests that Strings are converted into numbers correctly
+		 *
+		 * @throws Exception
+		 */
+		@Test(timeout = 1000)
+		public void testString2Number() throws Exception
 		{
-			converter.convert(intStr, BigDecimal.class);
-			fail();
+			String2Number converter = new String2Number();
+			Number result;
+
+			if (expectedInt != null)
+			{
+				result = converter.convert(input, Byte.class);
+				assertTrue("The result was not of the correct type", result instanceof Byte);
+				assertTrue("The result did not parse to the correct value", expectedInt.byteValue() == result.byteValue());
+				result = converter.convert(input, Short.class);
+				assertTrue("The result was not of the correct type", result instanceof Short);
+				assertTrue("The result did not parse to the correct value", expectedInt.shortValue() == result.shortValue());
+				result = converter.convert(input, Integer.class);
+				assertTrue("The result was not of the correct type", result instanceof Integer);
+				assertTrue("The result did not parse to the correct value", expectedInt.intValue() == result.intValue());
+				result = converter.convert(input, Long.class);
+				assertTrue("The result was not of the correct type", result instanceof Long);
+				assertTrue("The result did not parse to the correct value", expectedInt.longValue() == result.longValue());
+			}
+			if (expectedFloat != null)
+			{
+				if (!expectedFloat.isNaN())
+				{
+					result = converter.convert(input, Float.class);
+					assertTrue("The result was not of the correct type", result instanceof Float);
+					assertTrue("The result did not parse to the correct value", expectedFloat.floatValue() == result.floatValue());
+					result = converter.convert(input, Double.class);
+					assertTrue("The result was not of the correct type", result instanceof Double);
+					assertTrue("The result did not parse to the correct value", expectedFloat.doubleValue() == result.doubleValue());
+
+				}
+				//Special case for NaN (as NaN != NaN)
+				else
+				{
+					result = converter.convert(input, Float.class);
+					assertTrue("The result was not of the correct type", result instanceof Float);
+					assertTrue("The result did not parse to the correct value", Float.isNaN(result.floatValue()));
+					result = converter.convert(input, Double.class);
+					assertTrue("The result was not of the correct type", result instanceof Double);
+					assertTrue("The result did not parse to the correct value", Double.isNaN(result.doubleValue()));
+				}
+			}
 		}
-		catch (TryNextConverterException ex)
+
+		/**
+		 * Gets a list of tests and expected results to run
+		 *
+		 * @return a list of tests and expected results to run
+		 */
+		@Parameterized.Parameters
+		public static List<?> parameters()
 		{
-			assertNotNull(ex);
+			//Test that numbers convert properly, format is {String}, {Expected Integer}, {Expected Floating Point}
+			return Arrays.asList(new Object[][]
+					{
+						//Test Number
+						{
+							"1", 1L, 1d
+						},
+						//Test Negative Number
+						{
+							"-1", -1L, -1d
+						},
+						//Test Floating Point Number
+						{
+							"1.24", 1L, 1.24d
+						},
+						//Test Negative Floating Point Number
+						{
+							"-5.61", -5L, -5.61d
+						},
+						//Test Infinity
+						{
+							"Infinity", null, Double.POSITIVE_INFINITY
+						},
+						//Test NaN
+						{
+							"NaN", null, Double.NaN
+						}
+					});
+		}
+	}
+
+	/**
+	 * This is for Unparameterized tests
+	 */
+	public static class Unparameterized
+	{
+
+		/**
+		 * Test that when unsupported number types (like BigDecimal) are put in
+		 * it fails
+		 */
+		@Test(timeout = 1000)
+		public void testUnsupportedNumbers()
+		{
+			String2Number converter = new String2Number();
+
+			//Test unsupported numbers
+			try
+			{
+				converter.convert("5", BigDecimal.class);
+				fail();
+			}
+			catch (TryNextConverterException ex)
+			{
+				assertNotNull(ex);
+			}
 		}
 	}
 }

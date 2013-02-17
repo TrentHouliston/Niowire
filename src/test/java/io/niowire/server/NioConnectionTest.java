@@ -38,7 +38,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import static io.niowire.testutilities.CreateCommonMocks.*;
+
+import static io.niowire.testutilities.TestUtilities.*;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;

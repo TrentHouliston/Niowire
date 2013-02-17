@@ -17,6 +17,8 @@
 package io.niowire.serversource;
 
 import io.niowire.entities.Injector;
+import io.niowire.server.NioConnection;
+import io.niowire.testutilities.TestUtilities;
 import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.Files;
@@ -29,6 +31,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for the {@link DirectoryServerSource}
@@ -59,7 +62,7 @@ public class DirectoryServerSourceTest
 		assertTrue(tmpdir.isDirectory());
 
 		//Get our test file from our test resources
-		String test = new Scanner(DirectoryServerSourceTest.class.getResourceAsStream(DirectoryServerSource.class.getSimpleName() + ".json")).useDelimiter("\\Z").next();
+		String test = new Scanner(DirectoryServerSourceTest.class.getResourceAsStream(DirectoryServerSource.class.getSimpleName() + "TestFile.json")).useDelimiter("\\Z").next();
 
 		//Create an array for our server defintions
 		File[] serverDefs = new File[5];
@@ -366,5 +369,20 @@ public class DirectoryServerSourceTest
 
 		//Close our source
 		source.close();
+	}
+
+	/**
+	 * Test that Directory Server Sources are created from JSON properly
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testJsonCreation() throws Exception
+	{
+		NioConnection.Context context = mock(NioConnection.Context.class);
+		DirectoryServerSource test = TestUtilities.buildAndTestFromJson(DirectoryServerSource.class, context);
+
+		//Test that the server source is reading from the test directory
+		assertEquals("The directory targeted is wrong", new File("test"), test.directory);
 	}
 }

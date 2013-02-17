@@ -58,7 +58,7 @@ public class NioSocketServer implements Runnable
 	//The default inspector
 	static final NioObjectFactory<TimeoutInspector> DEFAULT_INSPECTOR = new NioObjectFactory<TimeoutInspector>(TimeoutInspector.class, Collections.singletonMap("timeout", -1));
 	//Our thread group
-	public final ThreadGroup NIOTHREAD_GROUP = new ThreadGroup("Livewire");
+	public final ThreadGroup NIOTHREAD_GROUP = new ThreadGroup("Niowire");
 	//The selector picking which socket to do next
 	private final Selector channels;
 	//Byte buffer for reading data into

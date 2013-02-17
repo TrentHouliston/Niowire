@@ -16,7 +16,7 @@
  */
 package io.niowire.entities.convert;
 
-import io.niowire.testutilities.RunPrivateUtilityConstructor;
+import io.niowire.testutilities.TestUtilities;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -117,6 +117,6 @@ public class Number2PrimitiveTest
 		}
 
 		//Run the private constructor (for code coverage results)
-		RunPrivateUtilityConstructor.runConstructor(Number2Primitive.class);
+		TestUtilities.runPrivateConstructor(Number2Primitive.class);
 	}
 }

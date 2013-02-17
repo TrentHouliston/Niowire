@@ -20,6 +20,7 @@ import io.niowire.data.NioPacket;
 import io.niowire.entities.Injector;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.server.NioConnection;
+import io.niowire.testutilities.TestUtilities;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collections;
@@ -173,5 +174,24 @@ public class TimeoutInspectorTest
 
 		//Try to get the timeout (should timeout when it's closed)
 		assertTrue("Timeout should return true when the inspector is closed", inspect.timeout());
+	}
+
+	/**
+	 * Test that TimeoutInspectors are created from JSON properly
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testJsonCreation() throws Exception
+	{
+		NioConnection.Context context = mock(NioConnection.Context.class);
+		TimeoutInspector test = TestUtilities.buildAndTestFromJson(TimeoutInspector.class, context);
+
+		//Test that the TimeoutInspector works properly
+		test.inspect(new NioPacket("test", "test"));
+
+		assertFalse(test.timeout());
+		Thread.sleep(110);
+		assertTrue(test.timeout());
 	}
 }

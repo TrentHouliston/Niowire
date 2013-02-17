@@ -21,6 +21,7 @@ import io.niowire.entities.Injector;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.server.NioConnection;
 import io.niowire.server.NioConnection.Context;
+import io.niowire.testutilities.TestUtilities;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -584,5 +585,33 @@ public class LineSerializerTest
 		assertEquals("The wrong data was returned", expected, packets.get(0).getData());
 		assertNull("The raw data was returned when it should not have", packets.get(0).getRawData());
 		assertFalse("The packet reported itself as raw", packets.get(0).isRaw());
+	}
+
+
+	/**
+	 * Test that Line serializers are created from Json properly
+	 *
+	 * @throws Exception
+	 */
+	@Test(timeout = 1000)
+	public void testJsonCreation() throws Exception
+	{
+		Context context = mock(Context.class);
+		LineSerializer test = TestUtilities.buildAndTestFromJson(LineSerializer.class, context);
+
+		//Test that the serializer is using utf-8
+		String testString = "✓✓Ï‹¸¸Ó´¯¸˘˘°ﬁ·˝∏ÇÏÍÇ¸π“£¢ªº√∆Ωç˚œæ";
+
+		//Serialize a packet
+		test.serialize(new NioPacket("Test", testString));
+
+		//Check that there is now data
+		assertTrue("There should be data now that it was serialized", test.hasData());
+
+		//Check that the data is what we sent in utf-8 (to check that the config is passed down)
+		ByteBuffer buff = ByteBuffer.allocate((testString + "\n").getBytes("utf-8").length);
+		test.read(buff);
+		assertFalse("There should be no more data", test.hasData());
+		assertArrayEquals("The strings were not equal", buff.array(), (testString + "\n").getBytes("utf-8"));
 	}
 }

@@ -47,7 +47,7 @@ public class DelayOutputSerializer implements NioSerializer
 	protected static final DelayQueue<DelayedNioPacket> queue = new DelayQueue<DelayedNioPacket>();
 	@Inject
 	@Named("serializer")
-	NioObjectFactory<NioSerializer> factory;
+	protected NioObjectFactory<NioSerializer> factory;
 	@Inject
 	protected int delay = 1000;
 	@Inject

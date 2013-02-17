@@ -40,33 +40,78 @@ public class String2Number implements Converter<String, Number>
 	@Override
 	public Number convert(String from, Class<? extends Number> actualTo) throws TryNextConverterException
 	{
-		if (Byte.class.isAssignableFrom(actualTo))
+		try
 		{
-			return Byte.parseByte(from);
+			//Parse bytes
+			if (Byte.class.isAssignableFrom(actualTo))
+			{
+				try
+				{
+					return Byte.parseByte(from);
+				}
+				//If we fail try parsing as a double and converting
+				catch (NumberFormatException nfe)
+				{
+					return (byte) Double.parseDouble(from);
+				}
+			}
+			//Parse shorts
+			else if (Short.class.isAssignableFrom(actualTo))
+			{
+				try
+				{
+					return Short.parseShort(from);
+				}
+				//If we fail try parsing as a double and converting
+				catch (NumberFormatException nfe)
+				{
+					return (short) Double.parseDouble(from);
+				}
+			}
+			//Parse Integers
+			else if (Integer.class.isAssignableFrom(actualTo))
+			{
+				try
+				{
+					return Integer.parseInt(from);
+				}
+				//If we fail try parsing as a double and converting
+				catch (NumberFormatException nfe)
+				{
+					return (int) Double.parseDouble(from);
+				}
+			}
+			//Parse Longs
+			else if (Long.class.isAssignableFrom(actualTo))
+			{
+				try
+				{
+					return Long.parseLong(from);
+				}
+				//If we fail try parsing as a double and converting
+				catch (NumberFormatException nfe)
+				{
+					return (long) Double.parseDouble(from);
+				}
+			}
+			//Parse Floats
+			else if (Float.class.isAssignableFrom(actualTo))
+			{
+				return (float) Double.parseDouble(from);
+			}
+			//Parse Doubles
+			else if (Double.class.isAssignableFrom(actualTo))
+			{
+				return Double.parseDouble(from);
+			}
+			else
+			{
+				throw new TryNextConverterException();
+			}
 		}
-		else if (Short.class.isAssignableFrom(actualTo))
+		catch (NumberFormatException ex)
 		{
-			return Short.parseShort(from);
-		}
-		else if (Integer.class.isAssignableFrom(actualTo))
-		{
-			return Integer.parseInt(from);
-		}
-		else if (Long.class.isAssignableFrom(actualTo))
-		{
-			return Long.parseLong(from);
-		}
-		else if (Float.class.isAssignableFrom(actualTo))
-		{
-			return Float.parseFloat(from);
-		}
-		else if (Double.class.isAssignableFrom(actualTo))
-		{
-			return Double.parseDouble(from);
-		}
-		else
-		{
-			throw new TryNextConverterException();
+			throw new TryNextConverterException(ex);
 		}
 	}
 
