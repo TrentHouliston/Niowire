@@ -35,6 +35,10 @@ import java.nio.channels.*;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,17 +52,21 @@ import org.slf4j.LoggerFactory;
  *
  * @author Trent Houliston
  */
-public class NioSocketServer implements Runnable
+public class NioSocketServer extends Thread
 {
 
 	//The logger for the server
 	private static final Logger LOG = LoggerFactory.getLogger(NioSocketServer.class);
+	//Our instances
+	private static HashMap<ThreadGroup, NioSocketServer> instances = new HashMap<ThreadGroup, NioSocketServer>(1);
 	//The default Serializer
 	static final NioObjectFactory<LineSerializer> DEFAULT_SERIALIZER = new NioObjectFactory<LineSerializer>(LineSerializer.class, Collections.singletonMap("charset", Charset.defaultCharset().name()));
 	//The default inspector
 	static final NioObjectFactory<TimeoutInspector> DEFAULT_INSPECTOR = new NioObjectFactory<TimeoutInspector>(TimeoutInspector.class, Collections.singletonMap("timeout", -1));
+	//Our threadpool
+	public final ThreadPoolExecutor POOL;
 	//Our thread group
-	public final ThreadGroup NIOTHREAD_GROUP = new ThreadGroup("Niowire");
+	public final ThreadGroup NIOTHREAD_GROUP;
 	//The selector picking which socket to do next
 	private final Selector channels;
 	//Byte buffer for reading data into
@@ -99,6 +107,10 @@ public class NioSocketServer implements Runnable
 	 */
 	public NioSocketServer(NioServerSource source) throws NiowireException
 	{
+		//Build and set our ThreadGroup
+		super(new ThreadGroup("Niowire"), "Niowire");
+		this.NIOTHREAD_GROUP = this.getThreadGroup();
+
 		try
 		{
 			//Allocate 8k for our buffer to read from sockets
@@ -115,6 +127,13 @@ public class NioSocketServer implements Runnable
 		{
 			throw new NiowireException("Was unable to setup the server due to an error", ex);
 		}
+
+		//Make the ThreadPool that is used
+		POOL = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(),
+									  Runtime.getRuntime().availableProcessors() * 4,
+									  30, TimeUnit.SECONDS,
+									  new LinkedBlockingQueue<Runnable>());
+		POOL.setThreadFactory(new NiowireThreadFactory());
 
 		//If we got passed null as the source that means that they are going
 		//to manage the servers manually
@@ -133,6 +152,21 @@ public class NioSocketServer implements Runnable
 	}
 
 	/**
+	 * This method gets the instance of NioSocketServer which the calling Thread
+	 * is executing under. It does this by inspecting the current Thread's
+	 * threadgroup. So if the current thread was not made by Niowire, then it
+	 * will not find it's parent.
+	 *
+	 * @return
+	 */
+	public static NioSocketServer getMyInstance()
+	{
+		ThreadGroup group = Thread.currentThread().getThreadGroup();
+
+		return instances.get(group);
+	}
+
+	/**
 	 * This is the main loop method which manages all of the operations of the
 	 * server. It handles all of the channels via the selector, and will also
 	 * handle any timeouts which have occurred and checking of there are any new
@@ -146,6 +180,9 @@ public class NioSocketServer implements Runnable
 		{
 			this.sourceRunnerThread.start();
 		}
+
+		//Register ourselves as an instance
+		instances.put(NIOTHREAD_GROUP, this);
 
 		while (true)
 		{
@@ -188,7 +225,10 @@ public class NioSocketServer implements Runnable
 
 						//Interrupt all the threads in the group (signal to shutdown)
 						NIOTHREAD_GROUP.interrupt();
-						//TODO make all threads which register with this thread respect this
+						POOL.shutdown();
+
+						//Remove ourselves as an instance
+						instances.remove(NIOTHREAD_GROUP);
 
 						//Die! (kill the thread)
 						throw new ThreadDeath();
@@ -809,6 +849,29 @@ public class NioSocketServer implements Runnable
 		void remove(NioConnection con)
 		{
 			connections.remove(con);
+		}
+	}
+
+	/**
+	 * This class creates new Threads for Niowire thread pool, the most
+	 * important task it does is to set the ThreadGroup
+	 *
+	 * @author Trent Houliston
+	 */
+	public class NiowireThreadFactory implements ThreadFactory
+	{
+
+		/**
+		 * Build a new Thread with the current Niowire thread group
+		 *
+		 * @param r the runnable to run in the thread
+		 *
+		 * @return a new thread with the runnable in it
+		 */
+		@Override
+		public Thread newThread(Runnable r)
+		{
+			return new Thread(NIOTHREAD_GROUP, r);
 		}
 	}
 }

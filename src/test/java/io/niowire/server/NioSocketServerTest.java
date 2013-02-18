@@ -40,6 +40,8 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 import org.junit.Test;
 import org.mockito.AdditionalAnswers;
 import org.mockito.ArgumentCaptor;
@@ -114,10 +116,9 @@ public class NioSocketServerTest
 		def.setInspectorFactory(inspectorFactory);
 		def.setServiceFactories(Collections.singletonList(serviceFactory));
 
-		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server.NIOTHREAD_GROUP, server);
-		t.setDaemon(true);
-		t.start();
+		//Start the server
+		server.setDaemon(true);
+		server.start();
 
 		//Add the server
 		serverPort = server.addServer(def);
@@ -292,10 +293,9 @@ public class NioSocketServerTest
 		defs[2].setInspectorFactory(inspectorFactories[2]);
 		defs[2].setServiceFactories(Collections.singletonList(serviceFactories[2][0]));
 
-		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server.NIOTHREAD_GROUP, server);
-		t.setDaemon(true);
-		t.start();
+		//Start the server
+		server.setDaemon(true);
+		server.start();
 
 		//Add the three servers
 		serverPorts[0] = server.addServer(defs[0]);
@@ -679,10 +679,9 @@ public class NioSocketServerTest
 		def.setInspectorFactory((NioObjectFactory<NioInspector>) factory);
 		def.setServiceFactories(Collections.singletonList((NioObjectFactory<NioService>) factory));
 
-		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server.NIOTHREAD_GROUP, server);
-		t.setDaemon(true);
-		t.start();
+		//Start the server
+		server.setDaemon(true);
+		server.start();
 
 		serverPort = server.addServer(def);
 		//</editor-fold>
@@ -745,10 +744,9 @@ public class NioSocketServerTest
 		def.setInspectorFactory(inspectorFactory);
 		def.setServiceFactories(Collections.singletonList(serviceFactory));
 
-		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server.NIOTHREAD_GROUP, server);
-		t.setDaemon(true);
-		t.start();
+		//Start the server
+		server.setDaemon(true);
+		server.start();
 
 		//Add the server
 		serverPort = server.addServer(def);
@@ -762,7 +760,7 @@ public class NioSocketServerTest
 		//Wait for the methods to run
 		verify(serializer, timeout(100)).deserialize(any(ByteBuffer.class));
 
-		assertTrue("The thread should still be alive", t.isAlive());
+		assertTrue("The thread should still be alive", server.isAlive());
 
 		//Close our socket (to clean up)
 		con.close();
@@ -803,10 +801,9 @@ public class NioSocketServerTest
 		def.setInspectorFactory(inspectorFactory);
 		def.setServiceFactories(Collections.singletonList(serviceFactory));
 
-		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server.NIOTHREAD_GROUP, server);
-		t.setDaemon(true);
-		t.start();
+		//Start the server
+		server.setDaemon(true);
+		server.start();
 		//</editor-fold>
 
 		//<editor-fold defaultstate="collapsed" desc="Testing server shutdown">
@@ -829,8 +826,8 @@ public class NioSocketServerTest
 			assertEquals("If an exception was thrown, only connection reset is acceptable", "Connection reset", ex.getMessage());
 		}
 
-		//Wait until the thread dies.
-		t.join();
+		//Wait until the server dies.
+		server.join();
 
 		//Close our socket (to clean up)
 		con.close();
@@ -898,10 +895,9 @@ public class NioSocketServerTest
 		//Create our server
 		NioSocketServer server = new NioSocketServer(source);
 
-		//Create a thread to run the socket server in and start it
-		Thread t = new Thread(server.NIOTHREAD_GROUP, server);
-		t.setDaemon(true);
-		t.start();
+		//Start the server
+		server.setDaemon(true);
+		server.start();
 		//</editor-fold>
 
 		//<editor-fold defaultstate="collapsed" desc="Verify that server source used correctly">
@@ -986,6 +982,80 @@ public class NioSocketServerTest
 
 		assertTrue(defaultSerializer.isInstance(lineSerializer));
 		assertTrue(defaultInspector.isInstance(timeoutInspector));
+	}
+
+	/**
+	 * Tests that getting the instance of Niowire which a thread is running
+	 * under works as expected
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testGetMyInstance() throws Exception
+	{
+		//Store our server that we got as our instance
+		final NioSocketServer[] result = new NioSocketServer[1];
+
+		//Build a server
+		NioSocketServer server = new NioSocketServer();
+		server.start();
+
+		//The thread group for the server
+		ThreadGroup group = server.getThreadGroup();
+
+		//Create a runnable which will get the instance it is running under
+		Runnable run = new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				//Get it and store it in the result
+				result[0] = NioSocketServer.getMyInstance();
+			}
+		};
+
+		//Build a Thread with the correct group, run it and wait for it to finish.
+		Thread t = new Thread(group, run);
+		t.start();
+		t.join();
+
+		//Check that what it got was our server we created
+		assertEquals(server, result[0]);
+
+		//Shutdown our server
+		server.shutdown();
+	}
+
+	/**
+	 * This tests that getting our Thread pool works as expected
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testNioThreadPool() throws Exception
+	{
+		//Build our server
+		NioSocketServer server = new NioSocketServer();
+		server.start();
+
+		//The thread group for the server
+		ThreadGroup group = server.getThreadGroup();
+
+		//Submit a task to the server and make sure that it's running in the niowire group
+		Future<ThreadGroup> task = server.POOL.submit(new Callable<ThreadGroup>()
+		{
+			@Override
+			public ThreadGroup call() throws Exception
+			{
+				return Thread.currentThread().getThreadGroup();
+			}
+		});
+
+		//Check it's the same group
+		assertEquals(server.NIOTHREAD_GROUP, task.get());
+
+		//Shutdown our server
+		server.shutdown();
 	}
 
 	/**
