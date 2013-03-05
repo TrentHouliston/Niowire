@@ -21,8 +21,10 @@ import io.niowire.data.NioPacket;
 import io.niowire.entities.NioObjectCreationException;
 import io.niowire.entities.NioObjectFactory;
 import io.niowire.server.NioConnection;
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.util.Collections;
+import java.util.Random;
 import java.util.Scanner;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -127,18 +129,54 @@ public class TestUtilities
 	@SuppressWarnings("unchecked")
 	public static <T> T buildAndTestFromJson(Class<T> clazz, NioConnection.Context context) throws NioObjectCreationException
 	{
-		//Read the test json file into the class factory
-		Gson g = new Gson();
-		String input = new Scanner(clazz.getResourceAsStream(clazz.getSimpleName() + ".json")).useDelimiter("\\Z").next();
-		NioObjectFactory<?> factory = g.fromJson(input, NioObjectFactory.class);
+		try
+		{
+			//Read the test json file into the class factory
+			Gson g = new Gson();
+			String input = new Scanner(clazz.getResourceAsStream(clazz.getSimpleName() + ".json")).useDelimiter("\\Z").next();
+			NioObjectFactory<?> factory = g.fromJson(input, NioObjectFactory.class);
 
-		//Create an instance and inject the context
-		Object obj = factory.create(Collections.singletonMap("context", context));
+			//Create an instance and inject the context
+			Object obj = factory.create(Collections.singletonMap("context", context));
 
-		//Check that the object is of the correct type
-		assertEquals("The object was not the correct instance", obj.getClass(), clazz);
+			//Check that the object is of the correct type
+			assertEquals("The object was not the correct instance", obj.getClass(), clazz);
 
-		return (T) obj;
+			return (T) obj;
+		}
+		catch (NullPointerException ex)
+		{
+			throw new RuntimeException("The Json file for this class did not exist at "
+									   + clazz.getName().replace('.', File.separatorChar)
+									   + ".json");
+		}
+		catch (RuntimeException ex)
+		{
+			throw ex;
+		}
+	}
+
+	/**
+	 * This method takes a byte array and fills it with random a-z characters
+	 *
+	 * @param inputArray the array to fill
+	 *
+	 * @return the array filled with random a-z characters
+	 */
+	public static byte[] randomCharFill(byte[] inputArray)
+	{
+		//Get a new random number generator
+		Random r = new Random();
+
+		//Loop through the array
+		for (int i = 0; i < inputArray.length; i++)
+		{
+			//Set the value to a random character between a-z
+			inputArray[i] = (byte) (r.nextInt(26) + 'a');
+		}
+
+		//Return the array
+		return inputArray;
 	}
 
 	/**
@@ -169,7 +207,7 @@ public class TestUtilities
 		 * @param invocation the invocation details
 		 *
 		 * @return if the passed object in the invocation is the object we were
-		 *               constructed with
+		 *         constructed with
 		 *
 		 * @throws Throwable
 		 */

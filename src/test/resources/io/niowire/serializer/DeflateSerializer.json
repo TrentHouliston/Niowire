@@ -1,0 +1,12 @@
+{
+	"class" : "io.niowire.serializer.DeflateSerializer",
+	"configuration" : {
+		"compressionLevel":9,
+		"serializer" : {
+			"class":"io.niowire.serializer.LineSerializer",
+			"configuration" : {
+				"charset":"utf-8"
+			}
+		}
+	}
+}

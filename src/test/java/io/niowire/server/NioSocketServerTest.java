@@ -1038,8 +1038,7 @@ public class NioSocketServerTest
 		NioSocketServer server = new NioSocketServer();
 		server.start();
 
-		//The thread group for the server
-		ThreadGroup group = server.getThreadGroup();
+		server.POOL.execute(server);
 
 		//Submit a task to the server and make sure that it's running in the niowire group
 		Future<ThreadGroup> task = server.POOL.submit(new Callable<ThreadGroup>()

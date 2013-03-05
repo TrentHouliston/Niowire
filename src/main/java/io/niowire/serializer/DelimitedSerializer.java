@@ -46,11 +46,11 @@ import org.slf4j.LoggerFactory;
 public abstract class DelimitedSerializer implements NioSerializer
 {
 
+	private static final Logger LOG = LoggerFactory.getLogger(DelimitedSerializer.class.getName());
 	/**
 	 * This is the static byte buffer shared between all instances of the
-	 * serializer.
+	 * serializer for operations.
 	 */
-	private static final Logger LOG = LoggerFactory.getLogger(DelimitedSerializer.class.getName());
 	private static final ByteBuffer tb = ByteBuffer.allocateDirect(32768);
 	//This buffer is allocated as needed if there is any leftover data (split packets)
 	private ByteBuffer residual = null;
@@ -268,20 +268,7 @@ public abstract class DelimitedSerializer implements NioSerializer
 			//Get our next buffer in the queue
 			ByteBuffer peek = sendQueue.peek();
 
-			//Note that we don't remove the element here, even if it is empty
-			//This is so a delimiter can be added next time (even if there is no data)
-
-			//Create a view of our buffer
-			ByteBuffer view = peek.duplicate();
-
-			//Set it's limit to how much free space we have in the buffer
-			view.limit(peek.position() + buffer.remaining());
-
-			//Move the position of our byte buffer so that we skip over the bytes we are writing
-			peek.position(peek.position() + buffer.remaining());
-
-			//Put as much as we can into the buffer
-			buffer.put(view);
+			transferMax(peek, buffer);
 		}
 
 		return read;
@@ -330,12 +317,54 @@ public abstract class DelimitedSerializer implements NioSerializer
 	}
 
 	/**
+	 * This is a static method which can be used by other serializers. It
+	 * transfers as many bytes as possible from the from buffer to the to
+	 * buffer.
+	 *
+	 * It will firstly transfer all the bytes from the from buffer into the to
+	 * buffer if they will fit. Otherwise it will move to.remaining() bytes from
+	 * the from buffer to the to buffer, advancing the from buffers position
+	 * to.remaining() bytes.
+	 *
+	 * @param from the buffer to transfer bytes from
+	 * @param to the buffer to transfer bytes into
+	 *
+	 * @return the number of bytes transfered
+	 */
+	public static int transferMax(ByteBuffer from, ByteBuffer to)
+	{
+		//If we cannot fit it all
+		if(from.remaining() > to.remaining())
+		{
+			//Get how many bytes we are about to write
+			int bytes = to.remaining();
+			
+			//Duplicate our buffer and set the duplicates limit to how much we can write
+			ByteBuffer d = from.duplicate();
+			d.limit(d.position() + bytes);
+			
+			//Update the actual buffers position forward how many bytes we are about to read
+			from.position(from.position() + bytes);
+			to.put(d);
+			return bytes;
+		}
+		//If we can fit it all
+		else
+		{
+			//Transfer it all in
+			int bytes = from.remaining();
+			to.put(from);
+			return bytes;
+		}
+	}
+
+	/**
 	 * This method is used to deserialize a blob of data after we have found our
 	 * delimiter. It passes a byte buffer with its position and limit set to the
 	 * data of interest.
 	 *
 	 * @param blob the {@link ByteBuffer} with its position and limit set to our
-	 *                point of interest.
+	 *             point of interest.
 	 *
 	 * @return a list of packets which were found in that delimited blob
 	 *
@@ -363,7 +392,7 @@ public abstract class DelimitedSerializer implements NioSerializer
 	 * case.
 	 *
 	 * @return a multi byte delimiter to search and use to split up the incoming
-	 *            data stream
+	 *         data stream
 	 */
 	protected abstract byte[] getDelimiter();
 }

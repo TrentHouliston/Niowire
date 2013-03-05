@@ -17,13 +17,13 @@
 package io.niowire.serializer;
 
 import io.niowire.data.NioPacket;
+import io.niowire.testutilities.TestUtilities;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -49,7 +49,7 @@ public class DelimitedSerializerTest
 		DelimitedSerializer serializer = new DelimitedSerializerImpl();
 
 		//Create an input array with random characters
-		byte[] inputArray = randomCharFill(new byte[128]);
+		byte[] inputArray = TestUtilities.randomCharFill(new byte[128]);
 
 		//Add 3 splits
 		inputArray[22] = (byte) '\n';
@@ -89,8 +89,8 @@ public class DelimitedSerializerTest
 		DelimitedSerializer serializer = new DelimitedSerializerImpl();
 
 		//Create two new input arrays filled with random characters
-		byte[] inputArray1 = randomCharFill(new byte[64]);
-		byte[] inputArray2 = randomCharFill(new byte[64]);
+		byte[] inputArray1 = TestUtilities.randomCharFill(new byte[64]);
+		byte[] inputArray2 = TestUtilities.randomCharFill(new byte[64]);
 
 		//Add a split in the first one, and two in the second
 		inputArray1[35] = (byte) '\n';
@@ -151,7 +151,7 @@ public class DelimitedSerializerTest
 		assertFalse("The serializer should not have data at this point", serializer.hasData());
 
 		//Create some test data of random characters
-		byte[] test = randomCharFill(new byte[1024]);
+		byte[] test = TestUtilities.randomCharFill(new byte[1024]);
 		NioPacket packet = new NioPacket("TEST", test);
 
 		//Set our expected result
@@ -203,7 +203,7 @@ public class DelimitedSerializerTest
 		assertFalse("The serializer should not have data at this point", serializer.hasData());
 
 		//Create some test data
-		byte[] test = randomCharFill(new byte[1024]);
+		byte[] test = TestUtilities.randomCharFill(new byte[1024]);
 		NioPacket packet = new NioPacket("TEST", test);
 
 		//Set our expected result arrays
@@ -293,7 +293,7 @@ public class DelimitedSerializerTest
 
 		for (int i = 0; i < testBytes.length; i++)
 		{
-			testBytes[i] = randomCharFill(new byte[500]);
+			testBytes[i] = TestUtilities.randomCharFill(new byte[500]);
 			packets[i] = new NioPacket("TEST", testBytes[i]);
 			expected[(i + 1) * 500 + i] = (byte) '\n';
 			System.arraycopy(testBytes[i], 0, expected, (i * 500) + i, testBytes[i].length);
@@ -346,7 +346,7 @@ public class DelimitedSerializerTest
 		assertFalse("The serializer should not have data at this point", serializer.hasData());
 
 		//Create some test data of random characters
-		byte[] test = randomCharFill(new byte[500]);
+		byte[] test = TestUtilities.randomCharFill(new byte[500]);
 		NioPacket packet = new NioPacket("TEST", test);
 
 		//Set our expected result
@@ -404,7 +404,7 @@ public class DelimitedSerializerTest
 		assertFalse("The serializer should not have data at this point", serializer.hasData());
 
 		//Create some test data of random characters
-		byte[] test = randomCharFill(new byte[1000]);
+		byte[] test = TestUtilities.randomCharFill(new byte[1000]);
 		NioPacket packet = new NioPacket("TEST", test);
 
 		//Set our expected result
@@ -457,6 +457,8 @@ public class DelimitedSerializerTest
 	/**
 	 * Tests that when an exception is thrown while serializing, that it is
 	 * ignored and not serialized.
+	 *
+	 * @throws Exception
 	 */
 	@Test(timeout = 1000)
 	public void testExceptionThrownOnSerialize() throws Exception
@@ -540,29 +542,6 @@ public class DelimitedSerializerTest
 		catch (ClosedChannelException ex)
 		{
 		}
-	}
-
-	/**
-	 * This method takes a byte array and fills it with random a-z characters
-	 *
-	 * @param inputArray the array to fill
-	 *
-	 * @return the array filled with random a-z characters
-	 */
-	private byte[] randomCharFill(byte[] inputArray)
-	{
-		//Get a new random number generator
-		Random r = new Random();
-
-		//Loop through the array
-		for (int i = 0; i < inputArray.length; i++)
-		{
-			//Set the value to a random character between a-z
-			inputArray[i] = (byte) (r.nextInt(26) + 'a');
-		}
-
-		//Return the array
-		return inputArray;
 	}
 
 	/**

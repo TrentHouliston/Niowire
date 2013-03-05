@@ -236,7 +236,6 @@ public class UniversalConverter
 			//Secondary sort distance
 			int c1from = getSuperclassDistance(from, c1.getFrom());
 			int c2from = getSuperclassDistance(from, c1.getFrom());
-			Integer.compare(c1to, c2to);
 
 			//Sort by primary then secondary
 			return Integer.compare(c1to, c2to) == 0 ? Integer.compare(c1from, c2from) : Integer.compare(c1to, c2to);
